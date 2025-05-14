@@ -1,20 +1,29 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer } from "electron"
+import { electronAPI } from "@electron-toolkit/preload"
 
 // Custom APIs for renderer
 const api = {
-  createTab: (id: number, url: string) => ipcRenderer.send('tab-create', { id, url }),
-  switchTab: (id: number) => ipcRenderer.send('tab-switch', id),
-  closeTab: (id: number) => ipcRenderer.send('tab-close', id),
+  createTab: (id: string, url: string): void => {
+    ipcRenderer.send("tab-create", { id, url })
+  },
+  switchTab: (id: string): void => {
+    ipcRenderer.send("tab-switch", id)
+  },
+  closeTab: (id: string): void => {
+    ipcRenderer.send("tab-close", id)
+  },
+  onPageTitleUpdated: (callback: (data: TabTitleData) => void): void => {
+    ipcRenderer.on("page-title-updated", (_, data: TabTitleData) => callback(data))
+  },
+  onPageFaviconUpdated: (callback: (data: TabFaviconData) => void): void => {
+    ipcRenderer.on("page-favicon-updated", (_, data: TabFaviconData) => callback(data))
+  }
 }
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld("electron", electronAPI)
+    contextBridge.exposeInMainWorld("api", api)
   } catch (error) {
     console.error(error)
   }

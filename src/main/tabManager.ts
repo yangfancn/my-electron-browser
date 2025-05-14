@@ -20,25 +20,43 @@ export function createTab(id: string, url: string): void {
   mainWindow.contentView?.addChildView(view)
   view.setBounds({
     x: 0,
-    y: 40,
+    y: 140,
     width: mainWindow.getBounds().width,
-    height: mainWindow.getBounds().height - 40
+    height: mainWindow.getBounds().height - 140
   })
   view.setVisible(false)
 
   tabs.push({ id, url, view })
+
+  //events
+  //title updated
+  view.webContents.on("page-title-updated", (event, title) => {
+    mainWindow.webContents.send("page-title-updated", { id, title })
+  })
+  //favicon updated
+  view.webContents.on("page-favicon-updated", (event, favicon) => {
+    mainWindow.webContents.send("page-favicon-updated", { id, favicon })
+  })
+  //loaded
+  view.webContents.on("did-finish-load", () => {
+    console.log("loaded")
+  })
+  //failed
+  view.webContents.on("did-fail-load", (event, errorCode) => {
+    console.log(errorCode)
+  })
 }
 
 export function switchTab(id: string): void {
   const tab = tabs.find((t) => t.id === id)
   if (!tab) return
 
-  tabs.forEach((t) => t.view.setBounds({ x: 0, y: 40, width: 0, height: 0 }))
+  tabs.forEach((t) => t.view.setBounds({ x: 0, y: 140, width: 0, height: 0 }))
   tab.view.setBounds({
     x: 0,
-    y: 40,
+    y: 140,
     width: mainWindow.getBounds().width,
-    height: mainWindow.getBounds().height - 40
+    height: mainWindow.getBounds().height - 140
   })
   tab.view.setVisible(true)
   activeTabId = id

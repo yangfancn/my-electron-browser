@@ -1,87 +1,52 @@
 <template>
-  <div class="app-content">
-    <div class="app-tabs-container">
-      <vue-draggable v-model="tabs" class="app-tabs" item-key="id" @end="onDragEnd">
-        <div
-          v-for="(item, index) in tabs"
-          :key="item.id"
-          :class="{ 'font-bold text-blue-600': index === activeIndex }"
-          @click="switchTab(index)"
-        >
-          <span>{{ item.title || "Loading..." }}</span>
-          <button @click.stop="closeTab(index)">×</button>
-        </div>
-      </vue-draggable>
-      <button class="add-tab" @click="addTab()">＋</button>
-    </div>
+  <div class="app-tabs-container">
+    <vue-draggable
+      v-model="tabStore.tabs"
+      class="app-tabs"
+      :animation="150"
+      ghost-class="ghost"
+      @end="onDragEnd"
+    >
+      <div
+        v-for="item in tabStore.tabs"
+        :key="item.id"
+        :class="{ active: item.id === tabStore.activeTabId }"
+        @click="switchTab(item.id)"
+      >
+        <img v-if="item.favicon" :src="item.favicon" alt="favicon" class="favicon" />
+        <Earth v-else class="favicon default-favicon" />
+        <span>{{ item.title || "Loading..." }}</span>
+        <Close class="close" @click.stop="closeTab(item.id)" />
+      </div>
+    </vue-draggable>
+    <button class="add-tab" @click="addTab()">＋</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { onMounted } from "vue"
 import { VueDraggable } from "vue-draggable-plus"
-
-interface TabData {
-  id: number
-  url: string
-  title: string
-}
+import { useTabStore } from "../stores/tabStore"
+import Close from "../assets/close.svg"
+import Earth from "../assets/earth.svg"
 
 const props = defineProps<{ defaultUrl: string }>()
-const tabs = ref<TabData[]>([])
-const activeIndex = ref(0)
-let tabIdCounter = 0
+const tabStore = useTabStore()
 
 function addTab(): void {
-  const id = tabIdCounter++
-  const newTab: TabData = {
-    id,
-    url: props.defaultUrl,
-    title: props.defaultUrl
-  }
-  tabs.value.push(newTab)
-  activeIndex.value = tabs.value.length - 1
-
-  // 通知主进程创建标签
-  window.api.createTab(id, newTab.url)
-  window.api.switchTab(id)
+  tabStore.createTab(props.defaultUrl)
 }
 
-function switchTab(index: number): void {
-  activeIndex.value = index
-  const tab = tabs.value[index]
-  if (tab) {
-    window.api.switchTab(tab.id)
-  }
+function switchTab(id: string): void {
+  tabStore.switchTab(id)
 }
 
-function closeTab(index: number): void {
-  const closed = tabs.value.splice(index, 1)[0]
-  if (!closed) return
-
-  // 通知主进程关闭标签
-  window.api.closeTab(closed.id)
-
-  if (activeIndex.value === index) {
-    // 如果关闭的是当前标签，则切换到前一个或第一个
-    const newIndex = index > 0 ? index - 1 : 0
-    activeIndex.value = newIndex
-    const fallbackTab = tabs.value[newIndex]
-    if (fallbackTab) window.api.switchTab(fallbackTab.id)
-  } else if (activeIndex.value > index) {
-    activeIndex.value--
-  }
+function closeTab(id: string): void {
+  tabStore.closeTab(id)
 }
 
 function onDragEnd(): void {
-  const activeTab = tabs.value[activeIndex.value]
-  if (!activeTab) return
-
-  // 拖动结束后找出当前激活 tab 的新位置
-  const newIndex = tabs.value.findIndex((t) => t.id === activeTab.id)
-  if (newIndex !== -1) {
-    activeIndex.value = newIndex
-  }
+  console.log(tabStore.tabs)
 }
 
 onMounted(() => {
@@ -93,42 +58,69 @@ onMounted(() => {
 .app-tabs-container {
   display: flex;
   align-items: flex-end;
-  background: #d4e3fc;
-  border-bottom: 1px solid #ccc;
-  height: 40px;
+  height: 100%;
 
   .app-tabs {
     display: flex;
     align-items: center;
 
     & > div {
+      flex-grow: 0;
+      background: #b9d3ff;
       height: 34px;
-      border-radius: 5px 5px 0 0;
-      background: #fff;
       color: #222;
-      white-space: nowrap;
-      overflow: hidden;
-      border: 1px solid #ccc;
-      border-bottom: none;
       padding: 5px;
       font-size: 13px;
       display: flex;
+      flex-flow: row nowrap;
       align-items: center;
       justify-content: space-between;
+      border-radius: 5px 5px 0 0;
+      max-width: 220px;
 
-      &:hover {
+      &.ghost {
+        opacity: 0.5;
+      }
+
+      &.active {
+        background: #fff;
+        border: 1px solid #ccc;
+        border-bottom: none;
+      }
+
+      &:not(.active):hover {
         background: #eef;
       }
 
-      span {
-        line-height: 1;
-        margin-right: 5px;
+      .favicon {
+        margin-right: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 2px;
       }
 
-      button {
-        background: none;
-        border: none;
-        outline: none;
+      span {
+        margin-right: 5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 12px;
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: #515c67;
+        margin: 0;
+        flex-shrink: 0;
+        flex-grow: 0;
+        border-radius: 50%;
+        padding: 2px;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background: #ddd;
+        }
       }
     }
   }
