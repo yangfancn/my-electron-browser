@@ -18,9 +18,6 @@ export default defineConfig({
         "@stores": resolve("src/renderer/stores")
       }
     },
-    plugins: [
-      vue(),
-      svgLoader()
-    ]
+    plugins: [vue(), svgLoader()]
   }
 })
