@@ -8,9 +8,25 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()]
   },
   preload: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, "src/preload/index.ts"),
+          splash: resolve(__dirname, "src/preload/splash.ts")
+        }
+      }
+    },
     plugins: [externalizeDepsPlugin()]
   },
   renderer: {
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve(__dirname, "src/renderer/index.html"),
+          splash: resolve(__dirname, "src/renderer/splash.html")
+        }
+      }
+    },
     resolve: {
       alias: {
         "@": resolve("./"),

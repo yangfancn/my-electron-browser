@@ -1,17 +1,23 @@
 <template>
-  <div class="loading-page">
-    <Close class="close" @click="closeWindow()" />
+  <div :class="['loading-page', { 'fade-out': isClosing }]">
     <Logo class="logo" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from "vue"
 import Logo from "../assets/logo.svg"
-import Close from "../assets/close.svg"
 
-function closeWindow(): void {
-  window.api.close()
-}
+const isClosing = ref(false)
+
+onMounted(() => {
+  window.api.onCloseSplash(() => {
+    isClosing.value = true
+    setTimeout(() => {
+      window.api.closeSplash()
+    }, 500)
+  })
+})
 </script>
 
 <style scoped>
@@ -24,6 +30,11 @@ function closeWindow(): void {
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: opacity 0.5s;
+
+  &.fade-out {
+    opacity: 0;
+  }
 
   .close {
     position: fixed;

@@ -1,9 +1,6 @@
 <template>
   <div class="app-browser">
-    <transition name="fade">
-      <SplashScreen v-if="loading" />
-    </transition>
-    <div v-if="defaultUrl" v-show="!loading">
+    <div v-if="defaultUrl">
       <div class="app-buttons">
         <button v-for="btn in buttons" :key="btn.label" @click="handleButton(btn)">
           {{ btn.label }}
@@ -21,7 +18,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, watch } from "vue"
 import axios from "axios"
-import SplashScreen from "./components/SplashScreen.vue"
 import TabManager from "./components/TabManager.vue"
 import PageActions from "./components/PageActions.vue"
 import AppActions from "./components/AppActions.vue"
@@ -62,7 +58,7 @@ onBeforeMount(async () => {
 
 watch(loading, (val) => {
   if (!val) {
-    window.api.setVisible()
+    window.api.closeSplash()
   }
 })
 </script>

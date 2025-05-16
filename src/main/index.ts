@@ -2,11 +2,38 @@ import { app, shell, BrowserWindow, ipcMain, Menu } from "electron"
 import { join } from "path"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
 import icon from "../../build/icon.png?asset"
-import { createTab, switchTab, closeTab, initTabManager, setVisible } from "./tabManager"
+import { createTab, switchTab, closeTab, initTabManager } from "./tabManager"
 
 let mainWindow: BrowserWindow | null = null
+let splashWindow: BrowserWindow | null = null
 
 function createWindow(): void {
+  // Create the splash window
+  splashWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    frame: false,
+    show: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      preload: join(__dirname, "../preload/splash.js"),
+      sandbox: false
+    }
+  })
+
+  splashWindow.on("ready-to-show", () => {
+    splashWindow.show()
+  })
+
+  if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+    splashWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/splash.html").then()
+    splashWindow.webContents.openDevTools()
+  } else {
+    splashWindow.loadFile(join(__dirname, "../renderer/splash.html")).then()
+  }
+
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -37,7 +64,7 @@ function createWindow(): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]).then()
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
@@ -64,7 +91,13 @@ app.whenReady().then(() => {
   // ipcMain.on('ping', () => console.log('pong'))
 
   //IPC events
-  ipcMain.on("config-loaded", () => setVisible())
+  ipcMain.on("index:close-splash", () => {
+    splashWindow.webContents.send("splash:begin-close")
+  })
+  ipcMain.on("splash:close-ready", () => {
+    splashWindow.hide()
+    splashWindow.close()
+  })
   ipcMain.on("tab-create", (_, { id, url }) => createTab(id, url))
   ipcMain.on("tab-switch", (_, id) => switchTab(id))
   ipcMain.on("tab-close", (_, id) => closeTab(id))

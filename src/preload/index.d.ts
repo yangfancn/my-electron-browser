@@ -11,7 +11,7 @@ interface TabFaviconData {
 }
 
 interface Api {
-  setVisible: () => void
+  closeSplash: () => void
   createTab: (id: string, url: string) => void
   switchTab: (id: string) => void
   closeTab: (id: string) => void

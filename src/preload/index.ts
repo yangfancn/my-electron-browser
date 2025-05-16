@@ -3,7 +3,7 @@ import { electronAPI } from "@electron-toolkit/preload"
 
 // Custom APIs for renderer
 const api = {
-  setVisible: (): void => ipcRenderer.send("config-loaded"),
+  closeSplash: (): void => ipcRenderer.send("index:close-splash"),
   createTab: (id: string, url: string): void => {
     ipcRenderer.send("tab-create", { id, url })
   },
