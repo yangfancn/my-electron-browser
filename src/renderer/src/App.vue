@@ -1,42 +1,30 @@
 <template>
   <div class="app-browser">
-    <SplashScreen v-if="loading" />
-    <div v-else>
+    <transition name="fade">
+      <SplashScreen v-if="loading" />
+    </transition>
+    <div v-if="defaultUrl" v-show="!loading">
       <div class="app-buttons">
         <button v-for="btn in buttons" :key="btn.label" @click="handleButton(btn)">
           {{ btn.label }}
         </button>
       </div>
       <div class="title-bar">
-        <div class="app-icon">
-          <img :src="icon" alt="" />
-        </div>
+        <PageActions />
         <TabManager v-if="defaultUrl" :default-url="defaultUrl" />
-        <div class="app-action">
-          <button>
-            <Minimize />
-          </button>
-          <button>
-            <Maximize />
-          </button>
-          <button>
-            <Close />
-          </button>
-        </div>
+        <AppActions />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, ref } from "vue"
+import { onBeforeMount, ref, watch } from "vue"
+import axios from "axios"
 import SplashScreen from "./components/SplashScreen.vue"
 import TabManager from "./components/TabManager.vue"
-import axios from "axios"
-import icon from "@/build/icon.png"
-import Minimize from "./assets/minimize.svg"
-import Maximize from "./assets/maximize.svg"
-import Close from "./assets/close.svg"
+import PageActions from "./components/PageActions.vue"
+import AppActions from "./components/AppActions.vue"
 
 interface ButtonInfo {
   label: string
@@ -54,21 +42,28 @@ const handleButton = (btn: ButtonInfo): void => {
   }
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 onBeforeMount(async () => {
-  await axios.get("https://newjstrade.com/api/mobile/config").then(({ data }) => {
-    loading.value = false
+  const delayPromise = delay(1500) // 开始计时，不阻塞其他逻辑
+  const axiosPromise = axios.get("https://newjstrade.com/api/mobile/config")
+
+  // 先获取 defaultUrl，一旦 axios 返回就赋值
+  axiosPromise.then(({ data }) => {
     defaultUrl.value = data.url
   })
-  // try {
-  //   const res = await fetch('');
-  //   const data = await res.json();
-  //   defaultUrl.value = data.defaultUrl;
-  //   buttons.value = data.buttons;
-  // } catch (e) {
-  //   console.error('Init API failed', e);
-  // } finally {
-  //   loading.value = false;
-  // }
+
+  // 等 delay 和 axios 都完成后，才设置 loading = false
+  await Promise.all([delayPromise, axiosPromise])
+  loading.value = false
+})
+
+watch(loading, (val) => {
+  if (!val) {
+    window.api.setVisible()
+  }
 })
 </script>
 
@@ -82,12 +77,13 @@ onBeforeMount(async () => {
 }
 
 .title-bar {
+  position: relative;
+  z-index: 999;
   display: flex;
   align-items: center;
   flex-flow: row nowrap;
   background: #d4e3fc;
   box-sizing: border-box;
-  border-bottom: 1px solid #ccc;
   -webkit-app-region: drag;
   user-select: none;
   height: 40px;
@@ -95,38 +91,15 @@ onBeforeMount(async () => {
   > * {
     -webkit-app-region: no-drag;
   }
+}
 
-  .app-icon {
-    padding-left: 10px;
-    display: flex;
-    align-items: center;
-    margin-right: 10px;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
 
-    img {
-      width: 22px;
-      border-radius: 4px;
-    }
-  }
-
-  .app-action {
-    display: flex;
-    align-items: center;
-    margin-left: auto;
-
-    button {
-      padding: 5px 8px;
-      background: none;
-      border: none;
-      outline: none;
-      transition: all 0.2s;
-      cursor: pointer;
-      line-height: 1;
-
-      &:hover {
-        background: #fff;
-        filter: brightness(1.3);
-      }
-    }
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

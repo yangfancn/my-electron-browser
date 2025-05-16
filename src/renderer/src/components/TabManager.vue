@@ -19,7 +19,7 @@
         <Close class="close" @click.stop="closeTab(item.id)" />
       </div>
     </vue-draggable>
-    <button class="add-tab" @click="addTab()">＋</button>
+    <Add class="add-tab" @click="addTab()" />
   </div>
 </template>
 
@@ -29,6 +29,7 @@ import { VueDraggable } from "vue-draggable-plus"
 import { useTabStore } from "../stores/tabStore"
 import Close from "../assets/close.svg"
 import Earth from "../assets/earth.svg"
+import Add from "../assets/add.svg"
 
 const props = defineProps<{ defaultUrl: string }>()
 const tabStore = useTabStore()
@@ -50,26 +51,27 @@ function onDragEnd(): void {
 }
 
 onMounted(() => {
-  addTab()
+  tabStore.tabs.length === 0 && addTab()
 })
 </script>
 
 <style scoped>
 .app-tabs-container {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   height: 100%;
 
   .app-tabs {
     display: flex;
     align-items: center;
+    margin-top: auto;
 
     & > div {
       flex-grow: 0;
       background: #b9d3ff;
       height: 34px;
       color: #222;
-      padding: 5px;
+      padding: 5px 8px;
       font-size: 13px;
       display: flex;
       flex-flow: row nowrap;
@@ -77,6 +79,7 @@ onMounted(() => {
       justify-content: space-between;
       border-radius: 5px 5px 0 0;
       max-width: 220px;
+      transition: background-color 0.35s;
 
       &.ghost {
         opacity: 0.5;
@@ -127,6 +130,19 @@ onMounted(() => {
 
   .add-tab {
     flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    padding: 2px;
+    border-radius: 50%;
+    margin: 3px 8px 0;
+    transition:
+      background-color 0.5s,
+      fill 0.5s;
+
+    &:hover {
+      background-color: #16225b;
+      fill: #fff;
+    }
   }
 }
 </style>

@@ -2,7 +2,7 @@ import { app, shell, BrowserWindow, ipcMain, Menu } from "electron"
 import { join } from "path"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
 import icon from "../../build/icon.png?asset"
-import { createTab, switchTab, closeTab, initTabManager } from "./tabManager"
+import { createTab, switchTab, closeTab, initTabManager, setVisible } from "./tabManager"
 
 let mainWindow: BrowserWindow | null = null
 
@@ -64,9 +64,29 @@ app.whenReady().then(() => {
   // ipcMain.on('ping', () => console.log('pong'))
 
   //IPC events
+  ipcMain.on("config-loaded", () => setVisible())
   ipcMain.on("tab-create", (_, { id, url }) => createTab(id, url))
   ipcMain.on("tab-switch", (_, id) => switchTab(id))
   ipcMain.on("tab-close", (_, id) => closeTab(id))
+  ipcMain.on("window-minimize", () => {
+    mainWindow.minimize()
+  })
+
+  ipcMain.on("window-maximize", () => {
+    mainWindow.maximize()
+  })
+
+  ipcMain.on("window-unmaximize", () => {
+    mainWindow.unmaximize()
+  })
+
+  ipcMain.on("window-close", () => {
+    mainWindow.close()
+  })
+
+  ipcMain.on("request-is-maximized", () => {
+    mainWindow.webContents.send("window-is-maximized", mainWindow.isMaximized())
+  })
 
   createWindow()
 

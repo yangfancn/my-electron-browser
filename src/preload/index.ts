@@ -3,6 +3,7 @@ import { electronAPI } from "@electron-toolkit/preload"
 
 // Custom APIs for renderer
 const api = {
+  setVisible: (): void => ipcRenderer.send("config-loaded"),
   createTab: (id: string, url: string): void => {
     ipcRenderer.send("tab-create", { id, url })
   },
@@ -17,7 +18,22 @@ const api = {
   },
   onPageFaviconUpdated: (callback: (data: TabFaviconData) => void): void => {
     ipcRenderer.on("page-favicon-updated", (_, data: TabFaviconData) => callback(data))
-  }
+  },
+  minimize: () => ipcRenderer.send("window-minimize"),
+  maximize: () => ipcRenderer.send("window-maximize"),
+  unmaximize: () => ipcRenderer.send("window-unmaximize"),
+  close: () => ipcRenderer.send("window-close"),
+  isMaximized: (callback) => {
+    ipcRenderer.on("window-is-maximized", (_event, isMax) => callback(isMax))
+  },
+  requestIsMaximized: () => ipcRenderer.send("request-is-maximized"),
+  onNavigationStateUpdated: (
+    callback: (data: { id: string; canGoBack: boolean; canGoForward: boolean }) => void
+  ) => ipcRenderer.on("navigation-state-updated", (_event, data) => callback(data)),
+  onTabLoadingState: (callback: (data: { id: string; loading: boolean }) => void) =>
+    ipcRenderer.on("tab-loading-state", (_event, data) => callback(data)),
+  onNewTabRequested: (callback: (url: string) => void) =>
+    ipcRenderer.on("new-tab-requested", (_event, url) => callback(url))
 }
 
 if (process.contextIsolated) {
