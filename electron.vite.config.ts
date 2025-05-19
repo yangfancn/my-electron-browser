@@ -27,10 +27,7 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
           splash: resolve(__dirname, "src/renderer/splash.html"),
-          notifications: resolve(
-            __dirname,
-            "src/renderer/src/internal-pages/notification/index.html"
-          )
+          notifications: resolve(__dirname, "src/renderer/notification.html")
         }
       }
     },

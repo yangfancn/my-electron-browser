@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, Menu, protocol, net } from "electron"
-import { join, extname } from "path"
+import { join, basename } from "path"
 import { pathToFileURL } from "url"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
 import icon from "../../build/icon.png?asset"
@@ -65,8 +65,7 @@ function createWindow(): void {
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    const parsed = new URL(details.url)
-    const protocol = parsed.protocol // 带冒号，比如 "https:", "http:", "js-browser:"
+    const protocol = new URL(details.url).protocol
 
     const allowedProtocols = ["http:", "https:", "js-browser:"]
     if (allowedProtocols.includes(protocol)) {
@@ -85,6 +84,7 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
+  mainWindow.webContents.openDevTools({ mode: "detach" })
 }
 
 // This method will be called when Electron has finished
@@ -92,17 +92,25 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   protocol.handle("js-browser", async (request) => {
-    if (is.dev) throw new Error("js-browser:// should be redirected in dev mode")
+    const pathname = request.url.slice("js-browser://".length)
+    const filename = basename(pathname)
+    const isAssets = pathname.includes("/") || filename.includes(".")
+    let fetchUrl: string
 
-    let pathname = request.url.slice("js-browser://".length)
-    if (!extname(pathname)) pathname += "/index.html"
+    if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+      fetchUrl = isAssets
+        ? `${process.env["ELECTRON_RENDERER_URL"]}/${pathname.replace(/^[^/]+\//, "")}`
+        : `${process.env["ELECTRON_RENDERER_URL"]}/${filename}.html`
+    } else {
+      const filePath = isAssets
+        ? join(app.getAppPath(), "out", "renderer", "assets", filename)
+        : join(app.getAppPath(), "out", "renderer", `${pathname}.html`)
 
-    const fileUrl = pathToFileURL(
-      join(__dirname, "../renderer/src/internal-pages/", pathname)
-    ).toString()
-    return net.fetch(fileUrl)
+      fetchUrl = pathToFileURL(filePath).toString()
+    }
+    // console.log("Fetch URL:", fetchUrl)
+    return net.fetch(fetchUrl)
   })
-
 
   // Set app user model id for windows
   electronApp.setAppUserModelId("com.electron")

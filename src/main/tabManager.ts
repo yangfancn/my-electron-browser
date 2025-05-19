@@ -1,6 +1,4 @@
 import { BrowserWindow, WebContentsView } from "electron"
-import { is } from "@electron-toolkit/utils"
-import { extname } from "path"
 
 interface Tab {
   id: string
@@ -12,7 +10,7 @@ const tabs: Tab[] = []
 let activeTabId: string | null = null
 let mainWindow: BrowserWindow
 
-function setBounds(view: WebContentsView): void {
+function setBoundsFill(view: WebContentsView): void {
   view.setBounds({
     x: 0,
     y: 40,
@@ -20,6 +18,8 @@ function setBounds(view: WebContentsView): void {
     height: mainWindow.getBounds().height - 40
   })
 }
+
+// @todo new setBoundsAnimation()
 
 function sendNavigationState(id: string, view: WebContentsView): void {
   const history = view.webContents.navigationHistory
@@ -33,37 +33,26 @@ function sendNavigationState(id: string, view: WebContentsView): void {
   mainWindow.webContents.send("navigation-state-updated", state)
 }
 
-function resolveInternalUrl(rawUrl: string): string {
-  if (!rawUrl.startsWith("js-browser://") || !is.dev || !process.env["ELECTRON_RENDERER_URL"])
-    return rawUrl
-
-  const pathname = rawUrl.slice("js-browser://".length)
-  const finalPath = !extname(pathname) ? `${pathname}/index.html` : pathname
-
-  return `${process.env["ELECTRON_RENDERER_URL"]}/src/internal-pages/${finalPath}`
-}
-
 export function initTabManager(win: BrowserWindow): void {
   mainWindow = win
 
   mainWindow.on("resize", () => {
     const activeTab = tabs.find((t) => t.id === activeTabId)
     if (activeTab) {
-      setBounds(activeTab.view)
+      setBoundsFill(activeTab.view)
     }
   })
 }
 
 export function createTab(id: string, url: string): void {
-  const rawUrl = resolveInternalUrl(url)
   const view = new WebContentsView()
-  view.webContents.loadURL(rawUrl)
+  view.webContents.loadURL(url)
   mainWindow.contentView?.addChildView(view)
   view.webContents.openDevTools()
-  setBounds(view)
+  setBoundsFill(view)
   view.setVisible(false)
 
-  tabs.push({ id, url: rawUrl, view })
+  tabs.push({ id, url, view })
 
   //events
   //title updated
@@ -104,7 +93,7 @@ export function switchTab(id: string): void {
   if (!tab) return
 
   tabs.forEach((t) => t.view.setBounds({ x: 0, y: 40, width: 0, height: 0 }))
-  setBounds(tab.view)
+  setBoundsFill(tab.view)
   tab.view.setVisible(true)
   activeTabId = id
 }
