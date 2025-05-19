@@ -11,10 +11,10 @@ import Logo from "../assets/logo.svg"
 const isClosing = ref(false)
 
 onMounted(() => {
-  window.api.onCloseSplash(() => {
+  window.splashApi.onCloseSplash(() => {
     isClosing.value = true
     setTimeout(() => {
-      window.api.closeSplash()
+      window.splashApi.closeSplash()
     }, 500)
   })
 })

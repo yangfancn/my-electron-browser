@@ -1,15 +1,5 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-
-interface TabTitleData {
-  id: string
-  title: string
-}
-
-interface TabFaviconData {
-  id: string
-  favicon: string
-}
-
+import { ElectronAPI } from "@electron-toolkit/preload"
+import { TabTitleData, TabFaviconData } from "./types"
 interface Api {
   closeSplash: () => void
   createTab: (id: string, url: string) => void
@@ -30,6 +20,10 @@ interface Api {
     callback: (data: { id: string; loading: boolean }) => void
   ) => void
   onNewTabRequested: (callback: (url: string) => void) => void
+  activeTabGoBack: () => void
+  activeTabGoForward: () => void
+  activeTabReload: () => void
+  activeTabStop: () => void
   // 可以继续添加其他API方法的类型
 }
 

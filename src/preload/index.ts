@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron"
 import { electronAPI } from "@electron-toolkit/preload"
-
+import { TabTitleData, TabFaviconData } from "./types"
 // Custom APIs for renderer
 const api = {
   closeSplash: (): void => ipcRenderer.send("index:close-splash"),
@@ -33,7 +33,11 @@ const api = {
   onTabLoadingState: (callback: (data: { id: string; loading: boolean }) => void) =>
     ipcRenderer.on("tab-loading-state", (_event, data) => callback(data)),
   onNewTabRequested: (callback: (url: string) => void) =>
-    ipcRenderer.on("new-tab-requested", (_event, url) => callback(url))
+    ipcRenderer.on("new-tab-requested", (_event, url) => callback(url)),
+  activeTabGoBack: () => ipcRenderer.send("active-tab-go-back"),
+  activeTabGoForward: () => ipcRenderer.send("active-tab-go-forward"),
+  activeTabReload: () => ipcRenderer.send("active-tab-reload"),
+  activeTabStop: () => ipcRenderer.send("active-tab-stop")
 }
 
 if (process.contextIsolated) {

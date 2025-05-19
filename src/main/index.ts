@@ -1,8 +1,18 @@
-import { app, shell, BrowserWindow, ipcMain, Menu } from "electron"
-import { join } from "path"
+import { app, shell, BrowserWindow, ipcMain, Menu, protocol, net } from "electron"
+import { join, extname } from "path"
+import { pathToFileURL } from "url"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
 import icon from "../../build/icon.png?asset"
-import { createTab, switchTab, closeTab, initTabManager } from "./tabManager"
+import {
+  createTab,
+  switchTab,
+  closeTab,
+  initTabManager,
+  activeTabGoBack,
+  activeTabGoForward,
+  activeTabReload,
+  activeTabStop
+} from "./tabManager"
 
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
@@ -24,12 +34,11 @@ function createWindow(): void {
   })
 
   splashWindow.on("ready-to-show", () => {
-    splashWindow.show()
+    splashWindow!.show()
   })
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     splashWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/splash.html").then()
-    splashWindow.webContents.openDevTools()
   } else {
     splashWindow.loadFile(join(__dirname, "../renderer/splash.html")).then()
   }
@@ -52,11 +61,19 @@ function createWindow(): void {
   initTabManager(mainWindow)
 
   mainWindow.on("ready-to-show", () => {
-    mainWindow.show()
+    mainWindow!.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url).then()
+    const parsed = new URL(details.url)
+    const protocol = parsed.protocol // 带冒号，比如 "https:", "http:", "js-browser:"
+
+    const allowedProtocols = ["http:", "https:", "js-browser:"]
+    if (allowedProtocols.includes(protocol)) {
+      mainWindow!.webContents.send("new-tab-requested", details.url)
+    } else {
+      shell.openExternal(details.url).then()
+    }
     return { action: "deny" }
   })
 
@@ -64,7 +81,7 @@ function createWindow(): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]).then()
-    // mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
@@ -74,6 +91,19 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  protocol.handle("js-browser", async (request) => {
+    if (is.dev) throw new Error("js-browser:// should be redirected in dev mode")
+
+    let pathname = request.url.slice("js-browser://".length)
+    if (!extname(pathname)) pathname += "/index.html"
+
+    const fileUrl = pathToFileURL(
+      join(__dirname, "../renderer/src/internal-pages/", pathname)
+    ).toString()
+    return net.fetch(fileUrl)
+  })
+
+
   // Set app user model id for windows
   electronApp.setAppUserModelId("com.electron")
 
@@ -92,34 +122,40 @@ app.whenReady().then(() => {
 
   //IPC events
   ipcMain.on("index:close-splash", () => {
-    splashWindow.webContents.send("splash:begin-close")
+    splashWindow!.webContents.send("splash:begin-close")
   })
   ipcMain.on("splash:close-ready", () => {
-    splashWindow.hide()
-    splashWindow.close()
+    splashWindow!.hide()
+    splashWindow!.close()
   })
   ipcMain.on("tab-create", (_, { id, url }) => createTab(id, url))
   ipcMain.on("tab-switch", (_, id) => switchTab(id))
   ipcMain.on("tab-close", (_, id) => closeTab(id))
   ipcMain.on("window-minimize", () => {
-    mainWindow.minimize()
+    mainWindow!.minimize()
   })
 
   ipcMain.on("window-maximize", () => {
-    mainWindow.maximize()
+    mainWindow!.maximize()
   })
 
   ipcMain.on("window-unmaximize", () => {
-    mainWindow.unmaximize()
+    mainWindow!.unmaximize()
   })
 
   ipcMain.on("window-close", () => {
-    mainWindow.close()
+    mainWindow!.close()
   })
 
   ipcMain.on("request-is-maximized", () => {
-    mainWindow.webContents.send("window-is-maximized", mainWindow.isMaximized())
+    mainWindow!.webContents.send("window-is-maximized", mainWindow!.isMaximized())
   })
+
+  //activeTab actions
+  ipcMain.on("active-tab-go-back", () => activeTabGoBack())
+  ipcMain.on("active-tab-go-forward", () => activeTabGoForward())
+  ipcMain.on("active-tab-reload", () => activeTabReload())
+  ipcMain.on("active-tab-stop", () => activeTabStop())
 
   createWindow()
 

@@ -1,9 +1,13 @@
 <template>
   <div class="page-action">
-    <Back :class="{ disable: !tabStore.activeTab?.canGoBack }" />
-    <Forward :class="{ disable: !tabStore.activeTab?.canGoForward }" />
-    <Close v-if="tabStore.activeTab?.loading" />
-    <Refresh v-else />
+    <Back :class="{ disable: !tabStore.activeTab?.canGoBack }" @click="activeTabGoBack()" />
+    <Forward
+      :class="{ disable: !tabStore.activeTab?.canGoForward }"
+      @click="activeTabGoForward()"
+    />
+    <Close v-if="tabStore.activeTab?.loading" @click="activeTabStop()" />
+    <Refresh v-else @click="activeTabReload()" />
+    <a href="js-browser://notification" target="_blank">No</a>
   </div>
 </template>
 
@@ -15,6 +19,10 @@ import Forward from "../assets/forward.svg"
 import Close from "../assets/close.svg"
 
 const tabStore = useTabStore()
+const activeTabGoBack = (): void => window.api.activeTabGoBack()
+const activeTabGoForward = (): void => window.api.activeTabGoForward()
+const activeTabReload = (): void => window.api.activeTabReload()
+const activeTabStop = (): void => window.api.activeTabStop()
 </script>
 
 <style scoped>

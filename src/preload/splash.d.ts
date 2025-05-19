@@ -1,4 +1,4 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import { ElectronAPI } from "@electron-toolkit/preload"
 
 interface Api {
   onCloseSplash: (callback: () => void) => void
@@ -8,6 +8,6 @@ interface Api {
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: Api
+    splashApi: Api
   }
 }
