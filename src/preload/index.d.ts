@@ -1,6 +1,5 @@
 import { ElectronAPI } from "@electron-toolkit/preload"
 import { TabTitleData, TabFaviconData } from "./types"
-import { LeftDrawerState } from "../main/tabManager"
 
 interface Api {
   closeSplash: () => void
@@ -18,9 +17,7 @@ interface Api {
   onNavigationStateUpdated: (
     callback: (data: { id: string; canGoBack: boolean; canGoForward: boolean }) => void
   ) => void
-  onTabLoadingState: (
-    callback: (data: { id: string; loading: boolean }) => void
-  ) => void
+  onTabLoadingState: (callback: (data: { id: string; loading: boolean }) => void) => void
   onNewTabRequested: (callback: (url: string) => void) => void
   activeTabGoBack: () => void
   activeTabGoForward: () => void

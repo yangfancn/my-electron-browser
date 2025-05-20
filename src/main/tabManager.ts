@@ -17,7 +17,7 @@ let activeTabId: string | null = null
 let leftDrawerOpen: boolean = false
 let mainWindow: BrowserWindow
 
-function getLeftDrawerWidth(): number {
+export function getLeftDrawerWidth(): number {
   return leftDrawerOpen ? LEFT_DRAWER_OPENED_WIDTH : LEFT_DRAWER_CLOSED_WIDTH
 }
 

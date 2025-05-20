@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain, Menu, protocol, net } from "electron"
+import { app, shell, BrowserWindow, ipcMain, Menu, protocol, net, session } from "electron"
 import { join, basename } from "path"
 import { pathToFileURL } from "url"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
@@ -14,6 +14,7 @@ import {
   activeTabStop,
   toggleLeftDrawer
 } from "./tabManager"
+import { createDownloadWindow, registerDownload } from "./downloadWindow"
 
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
@@ -83,11 +84,17 @@ function createWindow(): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]).then()
-    mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools({ mode: "detach" })
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
-  mainWindow.webContents.openDevTools({ mode: "detach" })
+
+  //download window
+  createDownloadWindow(mainWindow)
+
+  session.defaultSession.on("will-download", (_, item) => {
+    registerDownload(item)
+  })
 }
 
 // This method will be called when Electron has finished

@@ -17,8 +17,11 @@
           </a>
         </li>
       </ul>
-      <div class="toggle">
-        <double-arrow @click="toggleLeftDrawer" />
+      <div class="bottom">
+        <div class="download">
+          <download />
+        </div>
+        <double-arrow class="toggle" @click="toggleLeftDrawer" />
       </div>
     </div>
   </div>
@@ -33,6 +36,7 @@ import {
   TITLE_BAR_HEIGHT
 } from "../../../common/const"
 import DoubleArrow from "../assets/double_arrow.svg"
+import Download from "../assets/download.svg"
 
 export interface ButtonInfo {
   label: string
@@ -73,7 +77,7 @@ const toggleLeftDrawer = async (): Promise<void> => {
   &.opened {
     width: var(--open-width);
 
-    .toggle svg {
+    .download .toggle {
       transform: rotate(-190deg);
     }
 
@@ -151,9 +155,19 @@ const toggleLeftDrawer = async (): Promise<void> => {
       }
     }
 
-    .toggle {
+    .bottom {
       position: absolute;
       bottom: 0;
+      display: flex;
+      flex-direction: column;
+
+      > * {
+        margin-bottom: 0.5rem;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
 
       svg {
         width: 16px;

@@ -12,7 +12,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
-          splash: resolve(__dirname, "src/preload/splash.ts")
+          splash: resolve(__dirname, "src/preload/splash.ts"),
+          download: resolve(__dirname, "src/preload/download.ts")
         }
       }
     },
@@ -24,7 +25,8 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
           splash: resolve(__dirname, "src/renderer/splash.html"),
-          notifications: resolve(__dirname, "src/renderer/notification.html")
+          notification: resolve(__dirname, "src/renderer/notification.html"),
+          download: resolve(__dirname, "src/renderer/download.html")
         }
       }
     },
