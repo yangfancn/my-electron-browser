@@ -20,9 +20,6 @@ export default defineConfig({
   },
   renderer: {
     build: {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      base: process.env.NODE_ENV ? "http://localhost:5173/" : "/",
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),

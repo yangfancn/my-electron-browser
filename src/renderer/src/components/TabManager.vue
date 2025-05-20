@@ -15,7 +15,7 @@
       >
         <img v-if="item.favicon" :src="item.favicon" alt="favicon" class="favicon" />
         <Earth v-else class="favicon default-favicon" />
-        <span>{{ item.title || "Loading..." }}</span>
+        <span>{{ item.title || "加载中..." }}</span>
         <Close class="close" @click.stop="closeTab(item.id)" />
       </div>
     </vue-draggable>
@@ -60,14 +60,18 @@ onMounted(() => {
   display: flex;
   align-items: center;
   height: 100%;
+  overflow: hidden;
+  flex: 0 1 auto;
+  margin-right: 80px;
 
   .app-tabs {
     display: flex;
     align-items: center;
     margin-top: auto;
+    flex: 0 1 auto;
+    overflow: hidden;
 
     & > div {
-      flex-grow: 0;
       background: #b9d3ff;
       height: 34px;
       color: #222;
@@ -76,10 +80,10 @@ onMounted(() => {
       display: flex;
       flex-flow: row nowrap;
       align-items: center;
-      justify-content: space-between;
       border-radius: 5px 5px 0 0;
-      max-width: 220px;
       transition: background-color 0.35s;
+      overflow: hidden;
+      flex: 0 1 200px;
 
       &.ghost {
         opacity: 0.5;
@@ -103,7 +107,7 @@ onMounted(() => {
       }
 
       span {
-        margin-right: 5px;
+        margin-right: auto;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -114,7 +118,7 @@ onMounted(() => {
         width: 14px;
         height: 14px;
         fill: #515c67;
-        margin: 0;
+        margin: 0 0 0 5px;
         flex-shrink: 0;
         flex-grow: 0;
         border-radius: 50%;

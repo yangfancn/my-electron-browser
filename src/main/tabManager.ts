@@ -1,4 +1,10 @@
-import { BrowserWindow, WebContentsView } from "electron"
+import { BrowserWindow, WebContentsView, screen } from "electron"
+import {
+  TITLE_BAR_HEIGHT,
+  LEFT_DRAWER_CLOSED_WIDTH,
+  LEFT_DRAWER_OPENED_WIDTH,
+  LEFT_DRAWER_TOGGLE_DURATION
+} from "../common/const"
 
 interface Tab {
   id: string
@@ -8,18 +14,68 @@ interface Tab {
 
 const tabs: Tab[] = []
 let activeTabId: string | null = null
+let leftDrawerOpen: boolean = false
 let mainWindow: BrowserWindow
 
+function getLeftDrawerWidth(): number {
+  return leftDrawerOpen ? LEFT_DRAWER_OPENED_WIDTH : LEFT_DRAWER_CLOSED_WIDTH
+}
+
 function setBoundsFill(view: WebContentsView): void {
+  const leftDrawerWidth = getLeftDrawerWidth()
   view.setBounds({
-    x: 0,
-    y: 40,
-    width: mainWindow.getBounds().width,
-    height: mainWindow.getBounds().height - 40
+    x: leftDrawerWidth,
+    y: TITLE_BAR_HEIGHT,
+    width: mainWindow.getBounds().width - leftDrawerWidth,
+    height: mainWindow.getBounds().height - TITLE_BAR_HEIGHT
   })
 }
 
-// @todo new setBoundsAnimation()
+export function toggleLeftDrawer(): boolean {
+  const activeTab = tabs.find((t) => t.id === activeTabId)
+  if (!activeTab) return leftDrawerOpen
+
+  const mainWinBounds = mainWindow.getBounds()
+  const view = activeTab.view
+  const startBounds = view.getBounds()
+  const startTime = performance.now()
+  const targetState = !leftDrawerOpen
+
+  const targetX = targetState ? LEFT_DRAWER_OPENED_WIDTH : LEFT_DRAWER_CLOSED_WIDTH
+  const targetWidth = mainWinBounds.width - targetX
+
+  // 匀速线性：progress 本身
+  const display = screen.getDisplayNearestPoint(startBounds)
+  const frameInterval = 1000 / (display?.displayFrequency || 60)
+
+  const duration = LEFT_DRAWER_TOGGLE_DURATION
+  let lastFrameTime = 0
+
+  const animate = (): void => {
+    const now = performance.now()
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+
+    view.setBounds({
+      x: Math.round(startBounds.x + (targetX - startBounds.x) * progress),
+      y: TITLE_BAR_HEIGHT,
+      width: Math.round(startBounds.width + (targetWidth - startBounds.width) * progress),
+      height: mainWinBounds.height - TITLE_BAR_HEIGHT
+    })
+
+    if (progress < 1) {
+      const nextFrameTime = lastFrameTime + frameInterval
+      const delay = Math.max(0, nextFrameTime - performance.now())
+      setTimeout(animate, delay)
+      lastFrameTime = now
+    } else {
+      leftDrawerOpen = targetState
+    }
+  }
+
+  animate()
+  return targetState
+}
 
 function sendNavigationState(id: string, view: WebContentsView): void {
   const history = view.webContents.navigationHistory
@@ -48,7 +104,7 @@ export function createTab(id: string, url: string): void {
   const view = new WebContentsView()
   view.webContents.loadURL(url)
   mainWindow.contentView?.addChildView(view)
-  view.webContents.openDevTools()
+  if (url.startsWith("js-browser")) view.webContents.openDevTools()
   setBoundsFill(view)
   view.setVisible(false)
 
@@ -92,7 +148,9 @@ export function switchTab(id: string): void {
   const tab = tabs.find((t) => t.id === id)
   if (!tab) return
 
-  tabs.forEach((t) => t.view.setBounds({ x: 0, y: 40, width: 0, height: 0 }))
+  tabs.forEach((t) =>
+    t.view.setBounds({ x: getLeftDrawerWidth(), y: TITLE_BAR_HEIGHT, width: 0, height: 0 })
+  )
   setBoundsFill(tab.view)
   tab.view.setVisible(true)
   activeTabId = id

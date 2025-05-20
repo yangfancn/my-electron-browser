@@ -1,12 +1,8 @@
 <template>
   <div class="app-browser">
     <div v-if="defaultUrl">
-      <div class="app-buttons">
-        <button v-for="btn in buttons" :key="btn.label" @click="handleButton(btn)">
-          {{ btn.label }}
-        </button>
-      </div>
-      <div class="title-bar">
+      <LeftDrawer :buttons="buttons" />
+      <div class="title-bar" :style="{ height: `${TITLE_BAR_HEIGHT}px` }">
         <PageActions />
         <TabManager v-if="defaultUrl" :default-url="defaultUrl" />
         <AppActions />
@@ -21,22 +17,12 @@ import axios from "axios"
 import TabManager from "./components/TabManager.vue"
 import PageActions from "./components/PageActions.vue"
 import AppActions from "./components/AppActions.vue"
-
-interface ButtonInfo {
-  label: string
-  icon?: string
-  action: string
-}
+import LeftDrawer, { ButtonInfo } from "./components/LeftDrawer.vue"
+import { TITLE_BAR_HEIGHT } from "../../common/const"
 
 const loading = ref(true)
 const defaultUrl = ref<string | null>()
 const buttons = ref<ButtonInfo[]>([])
-
-const handleButton = (btn: ButtonInfo): void => {
-  if (btn.action === "goHome") {
-    console.log("Go Home")
-  }
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -44,11 +30,19 @@ function delay(ms: number): Promise<void> {
 
 onBeforeMount(async () => {
   const delayPromise = delay(1500) // 开始计时，不阻塞其他逻辑
-  const axiosPromise = axios.get("https://newjstrade.com/api/mobile/config")
+  const axiosPromise = axios.get("https://newjstrade.com/api/desktop/config")
 
   // 先获取 defaultUrl，一旦 axios 返回就赋值
   axiosPromise.then(({ data }) => {
     defaultUrl.value = data.url
+
+    data.buttons.forEach((button: { name: string; icon: string; url: string }) => {
+      buttons.value.push({
+        label: button.name,
+        icon: button.icon,
+        action: button.url
+      })
+    })
   })
 
   // 等 delay 和 axios 都完成后，才设置 loading = false
@@ -64,14 +58,6 @@ watch(loading, (val) => {
 </script>
 
 <style scoped>
-.app-buttons {
-  position: fixed;
-  left: 0;
-  height: fit-content;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
 .title-bar {
   position: relative;
   z-index: 999;
@@ -82,7 +68,8 @@ watch(loading, (val) => {
   box-sizing: border-box;
   -webkit-app-region: drag;
   user-select: none;
-  height: 40px;
+  width: 100%;
+  overflow: hidden;
 
   > * {
     -webkit-app-region: no-drag;

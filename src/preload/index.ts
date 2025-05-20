@@ -37,7 +37,8 @@ const api = {
   activeTabGoBack: () => ipcRenderer.send("active-tab-go-back"),
   activeTabGoForward: () => ipcRenderer.send("active-tab-go-forward"),
   activeTabReload: () => ipcRenderer.send("active-tab-reload"),
-  activeTabStop: () => ipcRenderer.send("active-tab-stop")
+  activeTabStop: () => ipcRenderer.send("active-tab-stop"),
+  toggleLeftDrawer: () => ipcRenderer.invoke("toggle-left-drawer")
 }
 
 if (process.contextIsolated) {

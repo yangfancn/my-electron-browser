@@ -1,0 +1,4 @@
+export const TITLE_BAR_HEIGHT = 40
+export const LEFT_DRAWER_CLOSED_WIDTH = 40
+export const LEFT_DRAWER_OPENED_WIDTH = 108
+export const LEFT_DRAWER_TOGGLE_DURATION = 150

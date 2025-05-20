@@ -7,7 +7,6 @@
     />
     <Close v-if="tabStore.activeTab?.loading" @click="activeTabStop()" />
     <Refresh v-else @click="activeTabReload()" />
-    <a href="js-browser://notification" target="_blank">No</a>
   </div>
 </template>
 

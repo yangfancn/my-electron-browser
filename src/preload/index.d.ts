@@ -1,5 +1,7 @@
 import { ElectronAPI } from "@electron-toolkit/preload"
 import { TabTitleData, TabFaviconData } from "./types"
+import { LeftDrawerState } from "../main/tabManager"
+
 interface Api {
   closeSplash: () => void
   createTab: (id: string, url: string) => void
@@ -24,6 +26,7 @@ interface Api {
   activeTabGoForward: () => void
   activeTabReload: () => void
   activeTabStop: () => void
+  toggleLeftDrawer: () => Promise<boolean>
   // 可以继续添加其他API方法的类型
 }
 

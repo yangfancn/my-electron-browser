@@ -11,7 +11,8 @@ import {
   activeTabGoBack,
   activeTabGoForward,
   activeTabReload,
-  activeTabStop
+  activeTabStop,
+  toggleLeftDrawer
 } from "./tabManager"
 
 let mainWindow: BrowserWindow | null = null
@@ -23,6 +24,7 @@ function createWindow(): void {
     width: 1200,
     height: 800,
     frame: false,
+    backgroundColor: "#16225b",
     show: false,
     alwaysOnTop: true,
     skipTaskbar: true,
@@ -38,15 +40,16 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-    splashWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/splash.html").then()
+    splashWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/splash.html")
   } else {
-    splashWindow.loadFile(join(__dirname, "../renderer/splash.html")).then()
+    splashWindow.loadFile(join(__dirname, "../renderer/splash.html"))
   }
 
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    backgroundColor: "#16225b",
     show: false,
     autoHideMenuBar: true,
     frame: false,
@@ -164,6 +167,7 @@ app.whenReady().then(() => {
   ipcMain.on("active-tab-go-forward", () => activeTabGoForward())
   ipcMain.on("active-tab-reload", () => activeTabReload())
   ipcMain.on("active-tab-stop", () => activeTabStop())
+  ipcMain.handle("toggle-left-drawer", () => toggleLeftDrawer())
 
   createWindow()
 

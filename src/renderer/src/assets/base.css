@@ -26,7 +26,7 @@
 }
 
 :root {
-  --color-background: var(--ev-c-theme);
+  --color-background: var(--ev-c-white);
   --color-background-soft: var(--ev-c-black-soft);
   --color-background-mute: var(--ev-c-black-mute);
 
