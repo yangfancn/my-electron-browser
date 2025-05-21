@@ -24,8 +24,9 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
     skipTaskbar: true,
     resizable: false,
     transparent: false,
+    hasShadow: false,
     x: parentX + getLeftDrawerWidth(),
-    y: parentY + parentWindow.getBounds().height - 400, // 左下角偏移
+    y: parentY + parentWindow.getBounds().height - 400 - 2, // 左下角偏移
     webPreferences: {
       preload: join(__dirname, "../preload/download.js"),
       sandbox: false
@@ -39,19 +40,24 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
     downloadWindow.loadFile(join(__dirname, "../renderer/download.html"))
   }
 
-  downloadWindow.once("ready-to-show", () => {
-    downloadWindow?.show()
-  })
-
   parentWindow.on("move", () => {
     const parentWindowBounds = parentWindow.getBounds()
     const x = parentWindowBounds.x
     const y = parentWindowBounds.y
+    downloadWindow?.setBounds(
+      {
+        x: x + getLeftDrawerWidth(),
+        y: y + parentWindow.getBounds().height - 400 - 2,
+        width: 320,
+        height: 400
+      },
+      true
+    )
+  })
+
+  downloadWindow.on("show", () => {
     downloadWindow?.setBounds({
-      x: x + getLeftDrawerWidth(),
-      y: y + parentWindow.getBounds().height - 400,
-      width: 320,
-      height: 400
+      x: parentWindow.getBounds().x + getLeftDrawerWidth(),
     })
   })
 
@@ -65,21 +71,30 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
 //     downloadWindow.hide()
 //   }
 // }
+export function showDownloadWindow(): void {
+  downloadWindow.show()
+}
+
+export function hideDownloadWindow(): void {
+  downloadWindow.hide()
+}
 
 export function registerDownload(item: Electron.DownloadItem): void {
   const id = uuidV4()
   downloadTasks.set(id, item)
 
   item.on("updated", () => {
-    downloadWindow?.webContents.send("download-progress", {
-      id,
-      filename: item.getFilename(),
-      filepath: item.getSavePath(),
-      url: item.getURL(),
-      received: item.getReceivedBytes(),
-      total: item.getTotalBytes(),
-      percent: Math.floor((item.getReceivedBytes() / item.getTotalBytes()) * 100)
-    })
+    if (item.getSavePath() && !item.isPaused()) {
+      downloadWindow?.webContents.send("download-progress", {
+        id,
+        filename: item.getFilename(),
+        filepath: item.getSavePath(),
+        url: item.getURL(),
+        received: item.getReceivedBytes(),
+        total: item.getTotalBytes(),
+        percent: Math.floor((item.getReceivedBytes() / item.getTotalBytes()) * 100)
+      })
+    }
   })
 
   item.once("done", (_, state) => {
@@ -89,18 +104,15 @@ export function registerDownload(item: Electron.DownloadItem): void {
 
 ipcMain.on("download-cancel", (_, id: string) => {
   const item = downloadTasks.get(id)
-  if (item) item.cancel()
-})
-
-ipcMain.on("download-cancel", (_, id: string) => {
-  const item = downloadTasks.get(id)
-  if (item) item.cancel()
+  console.log(id, item)
+  if (item) {
+    item.cancel()
+  }
 })
 
 ipcMain.on("download-remove", (_, id: string) => {
   downloadTasks.delete(id)
-  downloadWindow?.webContents.send("download-removed", { id })
-//   checkAutoHide() // 👈 自动隐藏
+  //   checkAutoHide() // 👈 自动隐藏
 })
 
 ipcMain.on("download-pause", (_, id: string) => {
@@ -111,4 +123,14 @@ ipcMain.on("download-pause", (_, id: string) => {
 ipcMain.on("download-resume", (_, id: string) => {
   const item = downloadTasks.get(id)
   if (item && item.isPaused()) item.resume()
+})
+
+ipcMain.on("show-download", () => showDownloadWindow())
+ipcMain.on("hide-download", () => hideDownloadWindow())
+ipcMain.on("toggle-download", () => {
+  if (downloadWindow.isVisible()) {
+    downloadWindow.hide()
+  } else {
+    downloadWindow.show()
+  }
 })

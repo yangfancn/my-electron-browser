@@ -1,4 +1,10 @@
-export type DownloadState = "downloading" | "completed" | "interrupted" | "paused" | "cancelled"
+export type DownloadState =
+  | "downloading"
+  | "completed"
+  | "interrupted"
+  | "paused"
+  | "cancelled"
+  | "deleted"
 
 export interface DownloadProgressData {
   id: string

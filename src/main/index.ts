@@ -14,7 +14,7 @@ import {
   activeTabStop,
   toggleLeftDrawer
 } from "./tabManager"
-import { createDownloadWindow, registerDownload } from "./downloadWindow"
+import { createDownloadWindow, registerDownload, showDownloadWindow, hideDownloadWindow } from "./downloadWindow"
 
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
@@ -174,7 +174,10 @@ app.whenReady().then(() => {
   ipcMain.on("active-tab-go-forward", () => activeTabGoForward())
   ipcMain.on("active-tab-reload", () => activeTabReload())
   ipcMain.on("active-tab-stop", () => activeTabStop())
-  ipcMain.handle("toggle-left-drawer", () => toggleLeftDrawer())
+  ipcMain.handle("toggle-left-drawer", () => {
+    hideDownloadWindow()
+    return toggleLeftDrawer()
+  })
 
   createWindow()
 

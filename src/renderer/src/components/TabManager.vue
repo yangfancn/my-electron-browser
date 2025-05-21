@@ -51,7 +51,13 @@ function onDragEnd(): void {
 }
 
 onMounted(() => {
+  console.log(window.api)
   tabStore.tabs.length === 0 && addTab()
+
+  window.api.onTabCloseRequested((id: string) => {
+    console.log(id)
+    tabStore.closeTab(id)
+  })
 })
 </script>
 

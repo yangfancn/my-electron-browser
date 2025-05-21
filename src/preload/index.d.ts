@@ -8,6 +8,7 @@ interface Api {
   closeTab: (id: string) => void
   onPageTitleUpdated: (callback: (data: TabTitleData) => void) => void
   onPageFaviconUpdated: (callback: (data: TabFaviconData) => void) => void
+  onTabCloseRequested: (callback: (id: string) => void) => void
   minimize: () => void
   maximize: () => void
   unmaximize: () => void
@@ -18,13 +19,14 @@ interface Api {
     callback: (data: { id: string; canGoBack: boolean; canGoForward: boolean }) => void
   ) => void
   onTabLoadingState: (callback: (data: { id: string; loading: boolean }) => void) => void
+  onNavigationFailed: (callback: (data: { errorCode: number, errorDescription: string  }) => void) => void
   onNewTabRequested: (callback: (url: string) => void) => void
   activeTabGoBack: () => void
   activeTabGoForward: () => void
   activeTabReload: () => void
   activeTabStop: () => void
   toggleLeftDrawer: () => Promise<boolean>
-  // 可以继续添加其他API方法的类型
+  toggleDownloadWindow: () => void
 }
 
 declare global {

@@ -19,6 +19,11 @@ const api = {
   onPageFaviconUpdated: (callback: (data: TabFaviconData) => void): void => {
     ipcRenderer.on("page-favicon-updated", (_, data: TabFaviconData) => callback(data))
   },
+  onTabCloseRequested: (callback: (id) => void): void => {
+    ipcRenderer.on("tab-close-requested", (_event, id: string) => {
+      callback(id)
+    })
+  },
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),
   unmaximize: () => ipcRenderer.send("window-unmaximize"),
@@ -32,13 +37,16 @@ const api = {
   ) => ipcRenderer.on("navigation-state-updated", (_event, data) => callback(data)),
   onTabLoadingState: (callback: (data: { id: string; loading: boolean }) => void) =>
     ipcRenderer.on("tab-loading-state", (_event, data) => callback(data)),
+  onNavigationFailed: (callback: (data: { errorCode: number; errorDescription: string }) => void) =>
+    ipcRenderer.on("navigation-failed-state", (_event, data) => callback(data)),
   onNewTabRequested: (callback: (url: string) => void) =>
     ipcRenderer.on("new-tab-requested", (_event, url) => callback(url)),
   activeTabGoBack: () => ipcRenderer.send("active-tab-go-back"),
   activeTabGoForward: () => ipcRenderer.send("active-tab-go-forward"),
   activeTabReload: () => ipcRenderer.send("active-tab-reload"),
   activeTabStop: () => ipcRenderer.send("active-tab-stop"),
-  toggleLeftDrawer: () => ipcRenderer.invoke("toggle-left-drawer")
+  toggleLeftDrawer: () => ipcRenderer.invoke("toggle-left-drawer"),
+  toggleDownloadWindow: () => ipcRenderer.send("toggle-download"),
 }
 
 if (process.contextIsolated) {

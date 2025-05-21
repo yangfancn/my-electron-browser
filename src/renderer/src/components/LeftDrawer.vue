@@ -19,7 +19,7 @@
       </ul>
       <div class="bottom">
         <div class="download">
-          <download />
+          <download @click="toggleDownloadWindow()" />
         </div>
         <double-arrow class="toggle" @click="toggleLeftDrawer" />
       </div>
@@ -46,13 +46,15 @@ export interface ButtonInfo {
 
 const open = ref<boolean>(false)
 
-const props = defineProps<{
+defineProps<{
   buttons: ButtonInfo[]
 }>()
 
-console.log(props.buttons)
+function toggleDownloadWindow(): void {
+  window.api.toggleDownloadWindow()
+}
 
-const toggleLeftDrawer = async (): Promise<void> => {
+async function toggleLeftDrawer(): Promise<void> {
   open.value = await window.api.toggleLeftDrawer()
 }
 </script>

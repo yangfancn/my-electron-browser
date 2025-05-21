@@ -1,20 +1,20 @@
 <template>
-  <div v-show="tasks.length" class="download-page">
+  <div class="download-page">
     <div class="header">下载</div>
     <div class="task-list">
       <div v-for="task in tasks" :key="task.id" class="task">
         <div class="info">
-          <div class="name">{{ task.filename }}</div>
-          <div class="progress-bar">
-            <div class="bar" :style="{ width: task.progress + '%' }"></div>
+          <div :class="{ name: true, deleted: task.state === 'deleted' }" @click="open(task)">{{ task.filename }}</div>
+          <div v-if="task.state === 'downloading' || task.state === 'paused'" class="progress-bar">
+            <div class="bar" :style="{ width: task.percent + '%' }"></div>
           </div>
-          <div class="status">{{ getStatusText(task.state) }}</div>
+          <div v-if="task.state === 'interrupted'" class="failed">下载失败</div>
         </div>
         <div class="actions">
-          <button @click="togglePause(task)">
-            {{ task.state === "paused" ? "恢复" : "暂停" }}
-          </button>
-          <button @click="remove(task.id)">删除</button>
+          <Pause v-if="task.state === 'downloading'" @click="pause(task.id)" />
+          <Play v-else-if="task.state === 'paused'" @click="resume(task.id)" />
+          <Folder v-else-if="task.state === 'completed'" @click="showItemInFolder(task.filepath)" />
+          <Delete @click="remove(task.id)" />
         </div>
       </div>
     </div>
@@ -25,14 +25,20 @@
 import { useDownloadStore, DownloadTask } from "../stores/downloadStore"
 import { DownloadProgressData, DownloadState } from "../../../preload/types/download"
 import { computed, onMounted } from "vue"
-//@todo 下载中的任务 hover 时显示: 暂停和删除 / 下载完成的 hover 时显示: 打开文件夹和删除 点击文件时打开文件/ 取消的任务直接移除 / 删除的任务加上删除线 ---------- 具体参考 Edge
+import Pause from "../assets/pause.svg"
+import Play from "../assets/play.svg"
+import Delete from "../assets/delete.svg"
+import Folder from "../assets/folder.svg"
+
 const store = useDownloadStore()
 const tasks = computed(() => store.tasks)
 
-console.log(window.downloadApi)
-
 window.downloadApi.onProgress((data: DownloadProgressData): void => {
   store.upsertTask({ ...data, state: "downloading" })
+  window.downloadApi.showDownload()
+  setTimeout(() => {
+    window.downloadApi.hideDownload()
+  }, 3500)
 })
 
 window.downloadApi.onDone((id: string, state: DownloadState): void => {
@@ -43,47 +49,70 @@ window.downloadApi.onRemoved((id: string): void => {
   store.removeTask(id)
 })
 
-function togglePause(task: DownloadTask): void {
-  console.log(task.state)
-  if (task.state === "paused") {
-    window.downloadApi.resume(task.id)
-  } else if (task.state === "downloading") {
-    window.downloadApi.pause(task.id)
-  }
+function pause(id: string): void {
+  store.pauseTask(id)
+}
+
+function resume(id: string): void {
+  store.resumeTask(id)
 }
 
 function remove(id: string): void {
-  window.downloadApi.remove(id)
+  store.removeTask(id)
 }
 
-function getStatusText(state: DownloadState): string {
-  switch (state) {
-    case "downloading":
-      return "下载中"
-    case "paused":
-      return "已暂停"
-    case "completed":
-      return "已完成"
-    case "interrupted":
-      return "失败"
-    default:
-      return "未知"
+function open(task: DownloadTask): void {
+  if (task.state === "completed") {
+    window.downloadApi.open(task.filepath)
   }
 }
 
+function showItemInFolder(filepath: string): void {
+  window.downloadApi.showInFolder(filepath)
+}
+
 onMounted(() => {
-  store.clearAll()
+  store.validateTasks()
 })
 </script>
 
 <style scoped>
 .download-page {
+  box-sizing: border-box;
+  height: 100vh;
+  width: 100vw;
   overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* 滚动条轨道 */
+
+  &::-webkit-scrollbar-track {
+    background: #eee;
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* 滚动条滑块 */
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(22, 34, 91, 0.39);
+    border-radius: 0 10px 10px 0;
+    transition: background-color 0.2s;
+  }
+
+  /* 滑块悬停时 */
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(22, 34, 91, 0.7);
+  }
 
   .header {
-    padding: 12px 16px;
-    font-weight: bold;
-    background-color: #f5f5f5;
+    padding: 8px 12px;
+    font-size: 14px;
     border-bottom: 1px solid #ddd;
   }
 
@@ -97,14 +126,21 @@ onMounted(() => {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 10px;
 
       &:last-child {
         border-bottom: none;
       }
 
+      &:hover {
+        .actions {
+          display: block;
+        }
+      }
+
       .info {
         flex: 1 1 auto;
-        margin-right: 12px;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -118,6 +154,11 @@ onMounted(() => {
           overflow: hidden;
           text-overflow: ellipsis;
           width: 100%;
+          cursor: default;
+
+          &.deleted {
+            text-decoration: line-through;
+          }
         }
 
         .progress-bar {
@@ -134,25 +175,27 @@ onMounted(() => {
           }
         }
 
-        .status {
+        .failed {
           font-size: 12px;
-          color: #666;
+          color: #f63232;
         }
       }
 
       .actions {
         flex-shrink: 0;
-        button {
-          margin-left: 8px;
-          padding: 4px 8px;
-          font-size: 12px;
-          cursor: pointer;
-          border: 1px solid #ccc;
-          background: #f9f9f9;
-          border-radius: 4px;
+        display: none;
+        margin-left: 12px;
+        line-height: 1;
 
-          &:hover {
-            background-color: #eee;
+        svg {
+          width: 16px;
+          height: 16px;
+          fill: #515c67;
+          cursor: pointer;
+          margin-right: 6px;
+
+          &:last-child {
+            margin-right: 0;
           }
         }
       }

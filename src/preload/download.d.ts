@@ -5,6 +5,8 @@ declare global {
   interface Window {
     electron: ElectronAPI
     downloadApi: {
+      showDownload: () => void
+      hideDownload: () => void
       onProgress: (callback: (data: DownloadProgressData) => void) => void
       onDone: (callback: (id: string, state: DownloadState) => void) => void
       onRemoved: (callback: (id: string) => void) => void
@@ -12,6 +14,9 @@ declare global {
       resume: (id: string) => void
       cancel: (id: string) => void
       remove: (id: string) => void
+      exists: (filepath: string) => boolean
+      open: (filepath: string) => void
+      showInFolder: (filepath: string) => void
     }
   }
 }

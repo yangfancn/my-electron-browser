@@ -128,6 +128,7 @@ export function createTab(id: string, url: string): void {
   view.webContents.on("did-frame-navigate", () => sendNavigationState(id, view))
   //loading
   view.webContents.on("did-start-loading", () => {
+    mainWindow.webContents.send("navigation-failed-state", { errorCode: 0 })
     mainWindow.webContents.send("tab-loading-state", { id, loading: true })
   })
   view.webContents.on("did-stop-loading", () => {
@@ -139,8 +140,35 @@ export function createTab(id: string, url: string): void {
     return { action: "deny" }
   })
   //failed
-  view.webContents.on("did-fail-load", (_, errorCode) => {
-    console.log(errorCode)
+  view.webContents.on(
+    "did-fail-load",
+    (_, errorCode: number, errorDescription: string, validatedURL, isMainFrame) => {
+      if (isMainFrame) {
+        view.setVisible(false)
+        mainWindow.webContents.send("navigation-failed-state", { errorCode, errorDescription })
+      }
+    }
+  )
+  view.webContents.on(
+    "did-fail-provisional-load",
+    (_, errorCode: number, errorDescription: string) => {
+      view.setVisible(false)
+      mainWindow.webContents.send("navigation-failed-state", { errorCode, errorDescription })
+    }
+  )
+
+  view.webContents.on("will-navigate", () => {
+    if (!view.getVisible()) {
+      view.setVisible(true)
+    }
+  })
+
+  view.webContents.session.on("will-download", (_, item) => {
+    if (!view.webContents.getURL() && item.getURL()) {
+      item.once("updated", () => {
+        mainWindow.webContents.send("tab-close-requested", id)
+      })
+    }
   })
 }
 
@@ -151,8 +179,13 @@ export function switchTab(id: string): void {
   tabs.forEach((t) =>
     t.view.setBounds({ x: getLeftDrawerWidth(), y: TITLE_BAR_HEIGHT, width: 0, height: 0 })
   )
+
+  if (!tab.view.getVisible()) {
+    tab.view.setVisible(true)
+  }
+
   setBoundsFill(tab.view)
-  tab.view.setVisible(true)
+
   activeTabId = id
 }
 

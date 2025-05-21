@@ -1,12 +1,18 @@
 <template>
-  <div class="app-browser">
+  <div class="app-browser" :style="{ '--title-bar-height': `${TITLE_BAR_HEIGHT}px` }">
     <div v-if="defaultUrl">
       <LeftDrawer :buttons="buttons" />
-      <div class="title-bar" :style="{ height: `${TITLE_BAR_HEIGHT}px` }">
+      <div class="title-bar">
         <PageActions />
         <TabManager v-if="defaultUrl" :default-url="defaultUrl" />
         <AppActions />
       </div>
+      <ErrorPage
+        v-if="error.code"
+        :error-code="error.code"
+        :error-description="error.description ?? ''"
+        class="error"
+      />
     </div>
   </div>
 </template>
@@ -19,10 +25,15 @@ import PageActions from "./components/PageActions.vue"
 import AppActions from "./components/AppActions.vue"
 import LeftDrawer, { ButtonInfo } from "./components/LeftDrawer.vue"
 import { TITLE_BAR_HEIGHT } from "../../common/const"
+import ErrorPage from "./components/ErrorPage.vue"
 
 const loading = ref(true)
 const defaultUrl = ref<string | null>()
 const buttons = ref<ButtonInfo[]>([])
+const error = ref<{
+  code?: number
+  description?: string
+}>({})
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -50,6 +61,11 @@ onBeforeMount(async () => {
   loading.value = false
 })
 
+window.api.onNavigationFailed(({ errorCode, errorDescription }) => {
+  error.value.code = errorCode
+  error.value.description = errorDescription
+})
+
 watch(loading, (val) => {
   if (!val) {
     window.api.closeSplash()
@@ -58,6 +74,10 @@ watch(loading, (val) => {
 </script>
 
 <style scoped>
+.app-browser {
+  --title-bar-height: unset;
+}
+
 .title-bar {
   position: relative;
   z-index: 999;
@@ -70,10 +90,16 @@ watch(loading, (val) => {
   user-select: none;
   width: 100%;
   overflow: hidden;
+  height: var(--title-bar-height);
 
   > * {
     -webkit-app-region: no-drag;
   }
+}
+
+.error {
+  width: 100%;
+  height: calc(100vh - var(--title-bar-height));
 }
 
 .fade-enter-active,
