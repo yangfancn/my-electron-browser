@@ -1,7 +1,7 @@
 // src/renderer/src/stores/tabStore.ts
 import { defineStore } from "pinia"
 import { v4 as uuidV4 } from "uuid"
-import { ref } from "vue"
+import { PresetCookies } from "../../../preload/types"
 
 interface Tab {
   id: string
@@ -13,100 +13,99 @@ interface Tab {
   loading?: boolean
 }
 
-export const useTabStore = defineStore("tabs", () => {
-  const tabs = ref<Tab[]>([])
-  const activeTabId = ref<string | null>(null)
-  const activeTab = ref<Tab | null>(null)
+export const useTabStore = defineStore("tabs", {
+  state: () => ({
+    tabs: [] as Tab[],
+    activeTabId: null as string | null,
+    activeTab: null as Tab | null
+  }),
+  actions: {
+    setupTitleListener() {
+      window.api.onPageTitleUpdated(({ id, title }) => {
+        const tab = this.tabs.find((t) => t.id === id)
+        if (tab) tab.title = title
+      })
+    },
+    setupNavigationListener() {
+      window.api.onNavigationStateUpdated(({ id, canGoBack, canGoForward }) => {
+        const tab = this.tabs.find((t) => t.id === id)
+        if (tab) {
+          tab.canGoBack = canGoBack
+          tab.canGoForward = canGoForward
+        }
+      })
+    },
+    setupFaviconListener() {
+      window.api.onPageFaviconUpdated(({ id, favicon }) => {
+        const tab = this.tabs.find((t) => t.id === id)
+        if (tab) tab.favicon = favicon
+      })
+    },
+    setupLoadingListener() {
+      window.api.onTabLoadingState(({ id, loading }) => {
+        const tab = this.tabs.find((t) => t.id === id)
+        if (tab) tab.loading = loading
+      })
+    },
+    setupNewTabHandler() {
+      window.api.onNewTabRequested((url) => {
+        this.createTab(url, [])
+      })
+    },
+    initListeners() {
+      this.setupTitleListener()
+      this.setupFaviconListener()
+      this.setupNavigationListener()
+      this.setupLoadingListener()
+      this.setupNewTabHandler()
+    },
+    createTab(url: string, presetCookies: PresetCookies) {
+      const id = uuidV4()
+      this.tabs.push({ id, url, loading: true })
+      window.api.createTab(id, url, presetCookies)
+      this.switchTab(id)
+    },
+    switchTab(id: string) {
+      this.activeTabId = id
+      this.activeTab = this.tabs.find((t) => t.id === id) ?? null
+      window.api.switchTab(id)
+    },
+    switchNextTab() {
+      if (this.tabs.length <= 1 || !this.activeTabId) return
 
-  function setupTitleListener(): void {
-    window.api.onPageTitleUpdated(({ id, title }) => {
-      const tab = tabs.value.find((t) => t.id === id)
-      if (tab) {
-        tab.title = title
+      const currentIndex = this.tabs.findIndex((t) => t.id === this.activeTabId)
+      const nextIndex = (currentIndex + 1) % this.tabs.length
+      this.switchTab(this.tabs[nextIndex].id)
+    },
+    switchPrevTab() {
+      if (this.tabs.length <= 1 || !this.activeTabId) return
+
+      const currentIndex = this.tabs.findIndex((t) => t.id === this.activeTabId)
+      const prevIndex = (currentIndex - 1 + this.tabs.length) % this.tabs.length
+      this.switchTab(this.tabs[prevIndex].id)
+    },
+    closeTab(id: string) {
+      const index = this.tabs.findIndex((t) => t.id === id)
+      if (index === -1) return
+
+      this.tabs.splice(index, 1)
+
+      if (this.activeTabId === id) {
+        let nextTab = this.tabs[index]
+        if (!nextTab && index > 0) {
+          nextTab = this.tabs[index - 1]
+        }
+
+        if (nextTab) {
+          this.switchTab(nextTab.id)
+        } else {
+          this.activeTabId = null
+          this.activeTab = null
+          window.api.close()
+        }
       }
-    })
-  }
 
-  function setupNavigationListener(): void {
-    window.api.onNavigationStateUpdated(({ id, canGoBack, canGoForward }) => {
-      const tab = tabs.value.find((t) => t.id === id)
-      if (tab) {
-        tab.canGoBack = canGoBack
-        tab.canGoForward = canGoForward
-      }
-    })
-  }
-
-  function setupFaviconListener(): void {
-    window.api.onPageFaviconUpdated(({ id, favicon }) => {
-      const tab = tabs.value.find((t) => t.id === id)
-      if (tab) {
-        tab.favicon = favicon
-      }
-    })
-  }
-
-  function setupLoadingListener(): void {
-    window.api.onTabLoadingState(({ id, loading }) => {
-      const tab = tabs.value.find((t) => t.id === id)
-      if (tab) {
-        tab.loading = loading
-      }
-    })
-  }
-
-  function setupNewTabHandler(): void {
-    window.api.onNewTabRequested((url) => {
-      createTab(url)
-    })
-  }
-
-  function createTab(url: string): void {
-    const id = uuidV4()
-    tabs.value.push({ id, url, loading: true })
-    window.api.createTab(id, url)
-    switchTab(id)
-  }
-
-  function switchTab(id: string): void {
-    activeTabId.value = id
-    activeTab.value = tabs.value.find((t) => t.id === id) ?? null
-    window.api.switchTab(id)
-  }
-
-  function closeTab(id: string): void {
-    const index = tabs.value.findIndex((t) => t.id === id)
-    if (index === -1) return
-
-    tabs.value.splice(index, 1)
-
-    if (activeTabId.value === id) {
-      let nextTab = tabs.value[index]
-      if (!nextTab && index > 0) {
-        nextTab = tabs.value[index - 1]
-      }
-
-      if (nextTab) {
-        switchTab(nextTab.id)
-      } else {
-        activeTabId.value = null
-        activeTab.value = null
-        window.api.close()
-      }
+      window.api.closeTab(id)
     }
-
-    window.api.closeTab(id)
   }
-
-  setupTitleListener()
-
-  setupFaviconListener()
-
-  setupNavigationListener()
-
-  setupLoadingListener()
-
-  setupNewTabHandler()
-
-  return { tabs, activeTabId, activeTab, createTab, switchTab, closeTab }
 })

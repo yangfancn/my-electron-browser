@@ -1,14 +1,17 @@
 import { ElectronAPI } from "@electron-toolkit/preload"
-import { TabTitleData, TabFaviconData } from "./types"
+import { TabTitleData, TabFaviconData, PresetCookies } from "./types";
 
 interface Api {
   closeSplash: () => void
-  createTab: (id: string, url: string) => void
+  createTab: (id: string, url: string, presetCookies: PresetCookies) => void
   switchTab: (id: string) => void
   closeTab: (id: string) => void
   onPageTitleUpdated: (callback: (data: TabTitleData) => void) => void
   onPageFaviconUpdated: (callback: (data: TabFaviconData) => void) => void
   onTabCloseRequested: (callback: (id: string) => void) => void
+  onActiveTabIdUpdated: (callback: (id: string) => void) => void
+  onSwitchNextTab: (callback: () => void) => void
+  onSwitchPrevTab: (callback: () => void) => void
   minimize: () => void
   maximize: () => void
   unmaximize: () => void

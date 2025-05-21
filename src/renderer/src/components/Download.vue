@@ -1,10 +1,12 @@
 <template>
   <div class="download-page">
     <div class="header">下载</div>
-    <div class="task-list">
+    <div v-if="store.tasks.length > 0" class="task-list">
       <div v-for="task in tasks" :key="task.id" class="task">
         <div class="info">
-          <div :class="{ name: true, deleted: task.state === 'deleted' }" @click="open(task)">{{ task.filename }}</div>
+          <div :class="{ name: true, deleted: task.state === 'deleted' }" @click="open(task)">
+            {{ task.filename }}
+          </div>
           <div v-if="task.state === 'downloading' || task.state === 'paused'" class="progress-bar">
             <div class="bar" :style="{ width: task.percent + '%' }"></div>
           </div>
@@ -18,6 +20,7 @@
         </div>
       </div>
     </div>
+    <div v-else class="empty">(空)</div>
   </div>
 </template>
 
@@ -200,6 +203,13 @@ onMounted(() => {
         }
       }
     }
+  }
+
+  .empty {
+    padding: 24px;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
   }
 }
 </style>

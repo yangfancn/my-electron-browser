@@ -14,27 +14,29 @@ import {
   activeTabStop,
   toggleLeftDrawer
 } from "./tabManager"
-import { createDownloadWindow, registerDownload, showDownloadWindow, hideDownloadWindow } from "./downloadWindow"
+import { createDownloadWindow, registerDownload, hideDownloadWindow } from "./downloadWindow"
+import { WindowStateManager } from "./WindowStateManager"
+import { registerBrowserShortcuts, unregisterBrowserShortcuts } from "./menu"
 
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
 
-function createWindow(): void {
+function createWindow(windowStateManger: WindowStateManager): void {
   // Create the splash window
-  splashWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    frame: false,
-    backgroundColor: "#16225b",
-    show: false,
-    alwaysOnTop: true,
-    skipTaskbar: true,
-    resizable: false,
-    webPreferences: {
-      preload: join(__dirname, "../preload/splash.js"),
-      sandbox: false
-    }
-  })
+  splashWindow = new BrowserWindow(
+    windowStateManger.applyTo({
+      frame: false,
+      backgroundColor: "#16225b",
+      show: false,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      resizable: false,
+      webPreferences: {
+        preload: join(__dirname, "../preload/splash.js"),
+        sandbox: false
+      }
+    })
+  )
 
   splashWindow.on("ready-to-show", () => {
     splashWindow!.show()
@@ -47,20 +49,21 @@ function createWindow(): void {
   }
 
   // Create the browser window.
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    backgroundColor: "#16225b",
-    show: false,
-    autoHideMenuBar: true,
-    frame: false,
-    // ...(process.platform === "linux" ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, "../preload/index.js"),
-      sandbox: false
-    },
-    icon
-  })
+  mainWindow = new BrowserWindow(
+    windowStateManger.applyTo({
+      backgroundColor: "#16225b",
+      show: false,
+      frame: false,
+      // ...(process.platform === "linux" ? { icon } : {}),
+      webPreferences: {
+        preload: join(__dirname, "../preload/index.js"),
+        sandbox: false
+      },
+      icon
+    })
+  )
+
+  windowStateManger.bindToWindow(mainWindow)
 
   initTabManager(mainWindow)
 
@@ -101,6 +104,11 @@ function createWindow(): void {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  const windowState = new WindowStateManager("main-window", {
+    width: 1200,
+    height: 800
+  })
+
   protocol.handle("js-browser", async (request) => {
     const pathname = request.url.slice("js-browser://".length)
     const filename = basename(pathname)
@@ -135,6 +143,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  app.on("will-quit", () => {
+    unregisterBrowserShortcuts()
+  })
+
   // IPC test
   // ipcMain.on('ping', () => console.log('pong'))
 
@@ -146,7 +158,7 @@ app.whenReady().then(() => {
     splashWindow!.hide()
     splashWindow!.close()
   })
-  ipcMain.on("tab-create", (_, { id, url }) => createTab(id, url))
+  ipcMain.on("tab-create", (_, { id, url, presetCookies }) => createTab(id, url, presetCookies))
   ipcMain.on("tab-switch", (_, id) => switchTab(id))
   ipcMain.on("tab-close", (_, id) => closeTab(id))
   ipcMain.on("window-minimize", () => {
@@ -179,12 +191,14 @@ app.whenReady().then(() => {
     return toggleLeftDrawer()
   })
 
-  createWindow()
+  createWindow(windowState)
+
+  registerBrowserShortcuts()
 
   app.on("activate", function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createWindow(windowState)
   })
 })
 

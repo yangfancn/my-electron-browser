@@ -4,7 +4,7 @@
       <LeftDrawer :buttons="buttons" />
       <div class="title-bar">
         <PageActions />
-        <TabManager v-if="defaultUrl" :default-url="defaultUrl" />
+        <TabManager v-if="defaultUrl" :default-url="defaultUrl" :preset-cookies="cookies" />
         <AppActions />
       </div>
       <ErrorPage
@@ -26,6 +26,7 @@ import AppActions from "./components/AppActions.vue"
 import LeftDrawer, { ButtonInfo } from "./components/LeftDrawer.vue"
 import { TITLE_BAR_HEIGHT } from "../../common/const"
 import ErrorPage from "./components/ErrorPage.vue"
+import { PresetCookies } from "../../preload/types"
 
 const loading = ref(true)
 const defaultUrl = ref<string | null>()
@@ -34,6 +35,9 @@ const error = ref<{
   code?: number
   description?: string
 }>({})
+
+//@todo 修改后端保存的前置cookies为数组对象
+const cookies: PresetCookies = []
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -45,6 +49,18 @@ onBeforeMount(async () => {
 
   // 先获取 defaultUrl，一旦 axios 返回就赋值
   axiosPromise.then(({ data }) => {
+    cookies.push({
+      url: data.url,
+      name: "testTrackingYF",
+      value: "txtWebSourceRef=0010070242"
+    })
+
+    cookies.push({
+      url: data.url,
+      name: "cidName",
+      value: "mircoSite"
+    })
+
     defaultUrl.value = data.url
 
     data.buttons.forEach((button: { name: string; icon: string; url: string }) => {

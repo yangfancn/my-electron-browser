@@ -24,7 +24,7 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
     skipTaskbar: true,
     resizable: false,
     transparent: false,
-    hasShadow: false,
+    hasShadow: true,
     x: parentX + getLeftDrawerWidth(),
     y: parentY + parentWindow.getBounds().height - 400 - 2, // 左下角偏移
     webPreferences: {
@@ -57,7 +57,7 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
 
   downloadWindow.on("show", () => {
     downloadWindow?.setBounds({
-      x: parentWindow.getBounds().x + getLeftDrawerWidth(),
+      x: parentWindow.getBounds().x + getLeftDrawerWidth()
     })
   })
 
@@ -72,11 +72,11 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
 //   }
 // }
 export function showDownloadWindow(): void {
-  downloadWindow.show()
+  downloadWindow?.show()
 }
 
 export function hideDownloadWindow(): void {
-  downloadWindow.hide()
+  downloadWindow?.hide()
 }
 
 export function registerDownload(item: Electron.DownloadItem): void {
@@ -128,9 +128,9 @@ ipcMain.on("download-resume", (_, id: string) => {
 ipcMain.on("show-download", () => showDownloadWindow())
 ipcMain.on("hide-download", () => hideDownloadWindow())
 ipcMain.on("toggle-download", () => {
-  if (downloadWindow.isVisible()) {
+  if (downloadWindow?.isVisible()) {
     downloadWindow.hide()
   } else {
-    downloadWindow.show()
+    downloadWindow?.show()
   }
 })

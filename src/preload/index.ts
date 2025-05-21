@@ -1,11 +1,11 @@
 import { contextBridge, ipcRenderer } from "electron"
 import { electronAPI } from "@electron-toolkit/preload"
-import { TabTitleData, TabFaviconData } from "./types"
+import { TabTitleData, TabFaviconData, PresetCookies } from "./types"
 // Custom APIs for renderer
 const api = {
   closeSplash: (): void => ipcRenderer.send("index:close-splash"),
-  createTab: (id: string, url: string): void => {
-    ipcRenderer.send("tab-create", { id, url })
+  createTab: (id: string, url: string, presetCookies: PresetCookies): void => {
+    ipcRenderer.send("tab-create", { id, url, presetCookies })
   },
   switchTab: (id: string): void => {
     ipcRenderer.send("tab-switch", id)
@@ -23,6 +23,12 @@ const api = {
     ipcRenderer.on("tab-close-requested", (_event, id: string) => {
       callback(id)
     })
+  },
+  onSwitchNextTab: (callback: () => void): void => {
+    ipcRenderer.on("switch-next-tab", (): void => callback())
+  },
+  onSwitchPrevTab: (callback: () => void): void => {
+    ipcRenderer.on("switch-prev-tab", (): void => callback())
   },
   minimize: () => ipcRenderer.send("window-minimize"),
   maximize: () => ipcRenderer.send("window-maximize"),

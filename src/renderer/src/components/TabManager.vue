@@ -30,12 +30,23 @@ import { useTabStore } from "../stores/tabStore"
 import Close from "../assets/close.svg"
 import Earth from "../assets/earth.svg"
 import Add from "../assets/add.svg"
+import { PresetCookies } from "../../../preload/types"
 
-const props = defineProps<{ defaultUrl: string }>()
+const props = withDefaults(
+  defineProps<{
+    defaultUrl?: string
+    presetCookies?: PresetCookies
+  }>(),
+  {
+    defaultUrl: "https://www.forex.com",
+    presetCookies: () => [] as PresetCookies
+  }
+)
+
 const tabStore = useTabStore()
 
 function addTab(): void {
-  tabStore.createTab(props.defaultUrl)
+  tabStore.createTab(props.defaultUrl, props.presetCookies)
 }
 
 function switchTab(id: string): void {
@@ -51,13 +62,17 @@ function onDragEnd(): void {
 }
 
 onMounted(() => {
-  console.log(window.api)
+  tabStore.initListeners()
+
   tabStore.tabs.length === 0 && addTab()
 
   window.api.onTabCloseRequested((id: string) => {
-    console.log(id)
     tabStore.closeTab(id)
   })
+
+  window.api.onSwitchNextTab(() => tabStore.switchNextTab())
+
+  window.api.onSwitchPrevTab(() => tabStore.switchPrevTab())
 })
 </script>
 

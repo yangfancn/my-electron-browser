@@ -1,4 +1,5 @@
 import { BrowserWindow, WebContentsView, screen } from "electron"
+import { PresetCookies } from "../preload/types"
 import {
   TITLE_BAR_HEIGHT,
   LEFT_DRAWER_CLOSED_WIDTH,
@@ -100,9 +101,23 @@ export function initTabManager(win: BrowserWindow): void {
   })
 }
 
-export function createTab(id: string, url: string): void {
+export function createTab(id: string, url: string, presetCookies: PresetCookies = []): void {
   const view = new WebContentsView()
-  view.webContents.loadURL(url)
+  const cookieSetPromises = presetCookies.map((cookie) => {
+    return view.webContents.session.cookies.set({
+      url,
+      path: "/",
+      name: cookie.name,
+      value: cookie.value
+    })
+  })
+
+  Promise.all(cookieSetPromises)
+    .catch((error) => {
+      console.error("Error setting cookies:", error)
+    })
+    .finally(() => view.webContents.loadURL(url))
+
   mainWindow.contentView?.addChildView(view)
   if (url.startsWith("js-browser")) view.webContents.openDevTools()
   setBoundsFill(view)
@@ -142,7 +157,7 @@ export function createTab(id: string, url: string): void {
   //failed
   view.webContents.on(
     "did-fail-load",
-    (_, errorCode: number, errorDescription: string, validatedURL, isMainFrame) => {
+    (_, errorCode: number, errorDescription: string, _validatedURL, isMainFrame) => {
       if (isMainFrame) {
         view.setVisible(false)
         mainWindow.webContents.send("navigation-failed-state", { errorCode, errorDescription })
@@ -186,7 +201,13 @@ export function switchTab(id: string): void {
 
   setBoundsFill(tab.view)
 
+  tab.view.webContents.openDevTools({ mode: "right" })
+
   activeTabId = id
+}
+
+export function getActiveTab(): Tab | undefined {
+  return tabs.find((t) => t.id === activeTabId)
 }
 
 export function closeTab(id: string): void {
@@ -206,30 +227,36 @@ export function closeTab(id: string): void {
 
 // page actions
 export function activeTabGoBack(): void {
-  const activeTab = tabs.find((t) => t.id === activeTabId)
-  if (activeTab) {
-    activeTab.view.webContents.navigationHistory.goBack()
-  }
+  getActiveTab()?.view.webContents.navigationHistory.goBack()
 }
 
 export function activeTabGoForward(): void {
-  const activeTab = tabs.find((t) => t.id === activeTabId)
-  if (activeTab) {
-    activeTab.view.webContents.navigationHistory.goForward()
-  }
+  getActiveTab()?.view.webContents.navigationHistory.goForward()
 }
 
 export function activeTabReload(): void {
-  const activeTab = tabs.find((t) => t.id === activeTabId)
-  console.log(activeTab)
+  getActiveTab()?.view.webContents.reload()
+}
+
+export function activeTabForceReload(): void {
+  const activeTab = getActiveTab()
   if (activeTab) {
-    activeTab.view.webContents.reload()
+    activeTab.view.webContents.session.clearCache().then(() => activeTab.view.webContents.reload())
   }
 }
 
 export function activeTabStop(): void {
-  const activeTab = tabs.find((t) => t.id === activeTabId)
-  if (activeTab) {
-    activeTab.view.webContents.stop()
-  }
+  getActiveTab()?.view.webContents.stop()
+}
+
+export function activeTabToggleDevTools(): void {
+  getActiveTab()?.view.webContents.toggleDevTools()
+}
+
+export function switchNextTab(): void {
+  mainWindow.webContents.send("switch-next-tab")
+}
+
+export function switchPrevTab(): void {
+  mainWindow.webContents.send("switch-prev-tab")
 }
