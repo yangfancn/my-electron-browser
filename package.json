@@ -25,8 +25,10 @@
     "@electron-toolkit/utils": "^4.0.0",
     "axios": "^1.9.0",
     "electron-updater": "^6.3.9",
+    "laravel-echo": "^2.1.4",
     "pinia": "^3.0.2",
     "pinia-plugin-persistedstate": "^4.3.0",
+    "pusher-js": "^8.4.0",
     "uuid": "^11.1.0",
     "vue-draggable-plus": "^0.6.0"
   },

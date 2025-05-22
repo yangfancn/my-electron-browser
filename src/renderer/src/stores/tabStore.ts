@@ -17,7 +17,9 @@ export const useTabStore = defineStore("tabs", {
   state: () => ({
     tabs: [] as Tab[],
     activeTabId: null as string | null,
-    activeTab: null as Tab | null
+    activeTab: null as Tab | null,
+    presetCookies: [] as PresetCookies,
+    defaultUrl: "https://forex.com" as string
   }),
   actions: {
     setupTitleListener() {
@@ -49,7 +51,7 @@ export const useTabStore = defineStore("tabs", {
     },
     setupNewTabHandler() {
       window.api.onNewTabRequested((url) => {
-        this.createTab(url, [])
+        this.createTab(url, this.presetCookies)
       })
     },
     initListeners() {

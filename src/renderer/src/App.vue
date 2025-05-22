@@ -1,19 +1,17 @@
 <template>
   <div class="app-browser" :style="{ '--title-bar-height': `${TITLE_BAR_HEIGHT}px` }">
-    <div v-if="defaultUrl">
-      <LeftDrawer :buttons="buttons" />
-      <div class="title-bar">
-        <PageActions />
-        <TabManager v-if="defaultUrl" :default-url="defaultUrl" :preset-cookies="cookies" />
-        <AppActions />
-      </div>
-      <ErrorPage
-        v-if="error.code"
-        :error-code="error.code"
-        :error-description="error.description ?? ''"
-        class="error"
-      />
+    <LeftDrawer :buttons="buttons" />
+    <div class="title-bar">
+      <PageActions />
+      <TabManager v-if="configLoaded" :preset-cookies="cookies" />
+      <AppActions />
     </div>
+    <ErrorPage
+      v-if="error.code"
+      :error-code="error.code"
+      :error-description="error.description ?? ''"
+      class="error"
+    />
   </div>
 </template>
 
@@ -27,10 +25,12 @@ import LeftDrawer, { ButtonInfo } from "./components/LeftDrawer.vue"
 import { TITLE_BAR_HEIGHT } from "../../common/const"
 import ErrorPage from "./components/ErrorPage.vue"
 import { PresetCookies } from "../../preload/types"
+import { useTabStore } from "./stores/tabStore"
 
 const loading = ref(true)
-const defaultUrl = ref<string | null>()
+const configLoaded = ref<boolean>(false)
 const buttons = ref<ButtonInfo[]>([])
+const tabStore = useTabStore()
 const error = ref<{
   code?: number
   description?: string
@@ -61,7 +61,9 @@ onBeforeMount(async () => {
       value: "mircoSite"
     })
 
-    defaultUrl.value = data.url
+    tabStore.defaultUrl = data.url
+    tabStore.presetCookies = data.presetCookies
+    configLoaded.value = true
 
     data.buttons.forEach((button: { name: string; icon: string; url: string }) => {
       buttons.value.push({

@@ -52,7 +52,7 @@ const api = {
   activeTabReload: () => ipcRenderer.send("active-tab-reload"),
   activeTabStop: () => ipcRenderer.send("active-tab-stop"),
   toggleLeftDrawer: () => ipcRenderer.invoke("toggle-left-drawer"),
-  toggleDownloadWindow: () => ipcRenderer.send("toggle-download"),
+  toggleDownloadWindow: () => ipcRenderer.send("toggle-download")
 }
 
 if (process.contextIsolated) {

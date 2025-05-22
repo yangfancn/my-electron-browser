@@ -20,6 +20,7 @@ import { registerBrowserShortcuts, unregisterBrowserShortcuts } from "./menu"
 
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
+let notificationDialogWindow: BrowserWindow | null = null
 
 function createWindow(windowStateManger: WindowStateManager): void {
   // Create the splash window
@@ -87,7 +88,7 @@ function createWindow(windowStateManger: WindowStateManager): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]).then()
-    mainWindow.webContents.openDevTools({ mode: "detach" })
+    // mainWindow.webContents.openDevTools({ mode: "detach" })
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
@@ -97,6 +98,42 @@ function createWindow(windowStateManger: WindowStateManager): void {
 
   session.defaultSession.on("will-download", (_, item) => {
     registerDownload(item)
+  })
+
+  //notification-dialog window after splashWindow Closed
+  splashWindow.on("closed", () => {
+    const mainWindowState = windowStateManger.getState()
+    notificationDialogWindow = new BrowserWindow({
+      width: mainWindowState.width - 100,
+      height: mainWindowState.height - 100,
+      x: mainWindowState.x + 50,
+      y: mainWindowState.y + 50,
+      // parent: mainWindow,
+      frame: false,
+      show: false,
+      resizable: false,
+      movable: true,
+      transparent: true,
+      hasShadow: false,
+      webPreferences: {
+        preload: join(__dirname, "../preload/notificationDialog.js"),
+        sandbox: false
+      }
+    })
+
+    notificationDialogWindow.webContents.on("will-navigate", (_, url) => {
+      mainWindow!.webContents.send("new-tab-requested", url)
+      notificationDialogWindow.hide()
+    })
+
+    if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+      notificationDialogWindow.loadURL(
+        process.env["ELECTRON_RENDERER_URL"] + "/notification-dialog.html"
+      )
+      notificationDialogWindow.webContents.openDevTools({ mode: "detach" })
+    } else {
+      notificationDialogWindow.loadFile(join(__dirname, "../renderer/notification-dialog.html"))
+    }
   })
 }
 
@@ -177,9 +214,7 @@ app.whenReady().then(() => {
     mainWindow!.close()
   })
 
-  ipcMain.on("request-is-maximized", () => {
-    mainWindow!.webContents.send("window-is-maximized", mainWindow!.isMaximized())
-  })
+  ipcMain.handle("get-default-url", () => defaultUrl)
 
   //activeTab actions
   ipcMain.on("active-tab-go-back", () => activeTabGoBack())
@@ -190,6 +225,10 @@ app.whenReady().then(() => {
     hideDownloadWindow()
     return toggleLeftDrawer()
   })
+
+  //notification window events
+  ipcMain.on("notification:hide", () => notificationDialogWindow.hide())
+  ipcMain.on("notification:show", () => notificationDialogWindow.show())
 
   createWindow(windowState)
 

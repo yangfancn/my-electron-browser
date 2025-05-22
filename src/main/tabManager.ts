@@ -105,7 +105,7 @@ export function createTab(id: string, url: string, presetCookies: PresetCookies 
   const view = new WebContentsView()
   const cookieSetPromises = presetCookies.map((cookie) => {
     return view.webContents.session.cookies.set({
-      url,
+      url: cookie.url,
       path: "/",
       name: cookie.name,
       value: cookie.value
@@ -119,7 +119,6 @@ export function createTab(id: string, url: string, presetCookies: PresetCookies 
     .finally(() => view.webContents.loadURL(url))
 
   mainWindow.contentView?.addChildView(view)
-  if (url.startsWith("js-browser")) view.webContents.openDevTools()
   setBoundsFill(view)
   view.setVisible(false)
 
@@ -200,8 +199,6 @@ export function switchTab(id: string): void {
   }
 
   setBoundsFill(tab.view)
-
-  tab.view.webContents.openDevTools({ mode: "right" })
 
   activeTabId = id
 }

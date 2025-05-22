@@ -30,23 +30,11 @@ import { useTabStore } from "../stores/tabStore"
 import Close from "../assets/close.svg"
 import Earth from "../assets/earth.svg"
 import Add from "../assets/add.svg"
-import { PresetCookies } from "../../../preload/types"
-
-const props = withDefaults(
-  defineProps<{
-    defaultUrl?: string
-    presetCookies?: PresetCookies
-  }>(),
-  {
-    defaultUrl: "https://www.forex.com",
-    presetCookies: () => [] as PresetCookies
-  }
-)
 
 const tabStore = useTabStore()
 
 function addTab(): void {
-  tabStore.createTab(props.defaultUrl, props.presetCookies)
+  tabStore.createTab(tabStore.defaultUrl, tabStore.presetCookies)
 }
 
 function switchTab(id: string): void {

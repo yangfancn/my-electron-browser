@@ -35,7 +35,7 @@ export function createDownloadWindow(parentWindow: BrowserWindow): void {
 
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     downloadWindow.loadURL(process.env["ELECTRON_RENDERER_URL"] + "/download.html")
-    downloadWindow.webContents.openDevTools({ mode: "detach" })
+    // downloadWindow.webContents.openDevTools({ mode: "detach" })
   } else {
     downloadWindow.loadFile(join(__dirname, "../renderer/download.html"))
   }

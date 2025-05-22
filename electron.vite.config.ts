@@ -13,7 +13,8 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/preload/index.ts"),
           splash: resolve(__dirname, "src/preload/splash.ts"),
-          download: resolve(__dirname, "src/preload/download.ts")
+          download: resolve(__dirname, "src/preload/download.ts"),
+          notificationDialog: resolve(__dirname, "src/preload/notification-dialog.ts")
         }
       }
     },
@@ -26,7 +27,8 @@ export default defineConfig({
           index: resolve(__dirname, "src/renderer/index.html"),
           splash: resolve(__dirname, "src/renderer/splash.html"),
           notification: resolve(__dirname, "src/renderer/notification.html"),
-          download: resolve(__dirname, "src/renderer/download.html")
+          download: resolve(__dirname, "src/renderer/download.html"),
+          notificationDialog: resolve(__dirname, "src/renderer/notification-dialog.html")
         }
       }
     },
