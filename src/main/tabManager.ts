@@ -1,4 +1,5 @@
 import { BrowserWindow, WebContentsView, screen } from "electron"
+import { getUUID } from "./uuidManger"
 import { PresetCookies } from "../preload/types"
 import {
   TITLE_BAR_HEIGHT,
@@ -6,6 +7,7 @@ import {
   LEFT_DRAWER_OPENED_WIDTH,
   LEFT_DRAWER_TOGGLE_DURATION
 } from "../common/const"
+import axios from "axios"
 
 interface Tab {
   id: string
@@ -137,7 +139,21 @@ export function createTab(id: string, url: string, presetCookies: PresetCookies 
     }
   })
   //history
-  view.webContents.on("did-navigate", () => sendNavigationState(id, view))
+  view.webContents.on("did-navigate", (_, url) => {
+    sendNavigationState(id, view)
+    //report
+    getUUID().then((uuid) => {
+      if (!uuid) return
+      axios
+        .post(`${process.env.API_DOMAIN}${process.env.API_LOG_USER_VISIT_PATH}` || "", {
+          uuid: uuid, // 你之前获取的 uuid
+          url
+        })
+        .catch((error) => {
+          console.error(error.message)
+        })
+    })
+  })
   view.webContents.on("did-navigate-in-page", () => sendNavigationState(id, view))
   view.webContents.on("did-frame-navigate", () => sendNavigationState(id, view))
   //loading

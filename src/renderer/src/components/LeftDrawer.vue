@@ -65,7 +65,8 @@ async function toggleLeftDrawer(): Promise<void> {
   --open-width: unset;
   --close-width: unset;
   --duration: unset;
-
+  -webkit-app-region: drag;
+  user-select: none;
   position: fixed;
   left: 0;
   top: var(--top);
@@ -75,6 +76,10 @@ async function toggleLeftDrawer(): Promise<void> {
   transition: width var(--duration) linear;
   box-sizing: border-box;
   box-shadow: inset -1px 0 0 0 #ddd;
+
+  > * {
+    -webkit-app-region: no-drag;
+  }
 
   &.opened {
     width: var(--open-width);

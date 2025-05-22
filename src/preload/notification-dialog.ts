@@ -3,8 +3,11 @@ import { electronAPI } from "@electron-toolkit/preload"
 
 // Custom APIs for renderer
 const notificationDialogApi = {
-  hide: () => ipcRenderer.send("notification:hide"),
-  show: () => ipcRenderer.send("notification:show")
+  close: () => ipcRenderer.send("notification:close"),
+  onInitData: (callback: (data: { title: string; content: string; timeout: number }) => void) =>
+    ipcRenderer.once("init-data", (_, data) => callback(data)),
+  readyToShow: (size: { width: number; height: number }) =>
+    ipcRenderer.send("notification:ready-to-show", size)
 }
 
 if (process.contextIsolated) {

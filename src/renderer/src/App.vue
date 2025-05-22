@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeMount, ref, watch } from "vue"
+import { onBeforeMount, onMounted, ref, watch } from "vue"
 import axios from "axios"
 import TabManager from "./components/TabManager.vue"
 import PageActions from "./components/PageActions.vue"
@@ -26,6 +26,17 @@ import { TITLE_BAR_HEIGHT } from "../../common/const"
 import ErrorPage from "./components/ErrorPage.vue"
 import { PresetCookies } from "../../preload/types"
 import { useTabStore } from "./stores/tabStore"
+import Pusher from "pusher-js"
+import Echo from "laravel-echo"
+
+interface Notification {
+  id: number
+  title: string
+  content: string
+  timeout: number
+}
+
+window.Pusher = Pusher
 
 const loading = ref(true)
 const configLoaded = ref<boolean>(false)
@@ -45,7 +56,9 @@ function delay(ms: number): Promise<void> {
 
 onBeforeMount(async () => {
   const delayPromise = delay(1500) // 开始计时，不阻塞其他逻辑
-  const axiosPromise = axios.get("https://newjstrade.com/api/desktop/config")
+  const axiosPromise = axios.get(
+    `${window.env.API_DOMAIN}${window.env.API_GET_CONFIG_PATH}?product=${window.env.CHANNEL}`
+  )
 
   // 先获取 defaultUrl，一旦 axios 返回就赋值
   axiosPromise.then(({ data }) => {
@@ -88,6 +101,26 @@ watch(loading, (val) => {
   if (!val) {
     window.api.closeSplash()
   }
+})
+
+onMounted(() => {
+  const echo = new Echo({
+    broadcaster: "reverb",
+    key: window.env.REVERB_APP_KEY,
+    wsHost: window.env.REVERB_HOST,
+    wsPort: window.env.REVERB_WS_PORT,
+    wssPort: window.env.REVERB_WSS_PORT,
+    forceTLS: false,
+    enabledTransports: ["ws", "wss"]
+  })
+
+  echo.channel("notification").listen("DesktopNotificationPublish", (data: Notification) => {
+    window.api.showNotificationDialog({
+      title: data.title,
+      content: data.content,
+      timeout: data.timeout
+    })
+  })
 })
 </script>
 

@@ -4,8 +4,11 @@ declare global {
   interface Window {
     electron: ElectronAPI
     notificationDialogApi: {
-      hide: () => void
-      show: () => void
+      close: () => void
+      onInitData: (
+        callback: (data: { title: string; content: string; timeout: number }) => void
+      ) => void
+      readyToShow: (size: { width: number; height: number }) => void
     }
   }
 }

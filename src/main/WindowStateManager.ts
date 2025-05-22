@@ -14,8 +14,8 @@ export class WindowStateManager {
   private readonly defaultState: WindowState
   private state: WindowState
 
-  constructor(fileName: string, defaultState: WindowState) {
-    this.filePath = join(app.getPath("userData"), `${fileName}.json`)
+  constructor(defaultState: WindowState) {
+    this.filePath = join(app.getPath("userData"), "window-state.json")
     this.defaultState = defaultState
     this.state = this.loadState()
   }

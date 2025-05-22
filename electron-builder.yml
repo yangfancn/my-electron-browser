@@ -1,7 +1,8 @@
 appId: com.electron.app
-productName: browser
+productName: browser-${env.APP_CHANNEL}
 directories:
   buildResources: build
+  out: dist/${env.APP_CHANNEL}
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -9,6 +10,8 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+extraMetadata:
+  APP_CHANNEL: ${env.APP_CHANNEL}
 asarUnpack:
   - resources/**
 win:

@@ -2,6 +2,9 @@ import { app, shell, BrowserWindow, ipcMain, Menu, protocol, net, session } from
 import { join, basename } from "path"
 import { pathToFileURL } from "url"
 import { electronApp, optimizer, is } from "@electron-toolkit/utils"
+import dotenv from "dotenv"
+import axios, { AxiosError } from "axios"
+import { getUUID } from "./uuidManger"
 import icon from "../../build/icon.png?asset"
 import {
   createTab,
@@ -18,14 +21,35 @@ import { createDownloadWindow, registerDownload, hideDownloadWindow } from "./do
 import { WindowStateManager } from "./WindowStateManager"
 import { registerBrowserShortcuts, unregisterBrowserShortcuts } from "./menu"
 
+dotenv.config()
+
 let mainWindow: BrowserWindow | null = null
 let splashWindow: BrowserWindow | null = null
 let notificationDialogWindow: BrowserWindow | null = null
+const sessionStartTime = Date.now()
+let sessionDurationReported = false
+let windowState: WindowStateManager | null = null
+let uuid: string | null = null
 
-function createWindow(windowStateManger: WindowStateManager): void {
+function reportSessionDuration(): void {
+  if (sessionDurationReported || !uuid) return
+  sessionDurationReported = true
+
+  axios
+    .post(`${process.env.API_DOMAIN}${process.env.API_LOG_APP_DURATION_PATH}` || "", {
+      uuid: uuid, // 你之前获取的 uuid
+      start_time: sessionStartTime,
+      end_time: Date.now()
+    })
+    .catch((error: AxiosError) => {
+      console.error(error.message)
+    })
+}
+
+function createWindow(): void {
   // Create the splash window
   splashWindow = new BrowserWindow(
-    windowStateManger.applyTo({
+    windowState!.applyTo({
       frame: false,
       backgroundColor: "#16225b",
       show: false,
@@ -51,7 +75,7 @@ function createWindow(windowStateManger: WindowStateManager): void {
 
   // Create the browser window.
   mainWindow = new BrowserWindow(
-    windowStateManger.applyTo({
+    windowState!.applyTo({
       backgroundColor: "#16225b",
       show: false,
       frame: false,
@@ -64,7 +88,7 @@ function createWindow(windowStateManger: WindowStateManager): void {
     })
   )
 
-  windowStateManger.bindToWindow(mainWindow)
+  windowState!.bindToWindow(mainWindow)
 
   initTabManager(mainWindow)
 
@@ -88,10 +112,10 @@ function createWindow(windowStateManger: WindowStateManager): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
     mainWindow.loadURL(process.env["ELECTRON_RENDERER_URL"]).then()
-    // mainWindow.webContents.openDevTools({ mode: "detach" })
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html")).then()
   }
+  mainWindow.webContents.openDevTools({ mode: "detach" })
 
   //download window
   createDownloadWindow(mainWindow)
@@ -99,52 +123,18 @@ function createWindow(windowStateManger: WindowStateManager): void {
   session.defaultSession.on("will-download", (_, item) => {
     registerDownload(item)
   })
-
-  //notification-dialog window after splashWindow Closed
-  splashWindow.on("closed", () => {
-    const mainWindowState = windowStateManger.getState()
-    notificationDialogWindow = new BrowserWindow({
-      width: mainWindowState.width - 100,
-      height: mainWindowState.height - 100,
-      x: mainWindowState.x + 50,
-      y: mainWindowState.y + 50,
-      // parent: mainWindow,
-      frame: false,
-      show: false,
-      resizable: false,
-      movable: true,
-      transparent: true,
-      hasShadow: false,
-      webPreferences: {
-        preload: join(__dirname, "../preload/notificationDialog.js"),
-        sandbox: false
-      }
-    })
-
-    notificationDialogWindow.webContents.on("will-navigate", (_, url) => {
-      mainWindow!.webContents.send("new-tab-requested", url)
-      notificationDialogWindow.hide()
-    })
-
-    if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
-      notificationDialogWindow.loadURL(
-        process.env["ELECTRON_RENDERER_URL"] + "/notification-dialog.html"
-      )
-      notificationDialogWindow.webContents.openDevTools({ mode: "detach" })
-    } else {
-      notificationDialogWindow.loadFile(join(__dirname, "../renderer/notification-dialog.html"))
-    }
-  })
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-  const windowState = new WindowStateManager("main-window", {
+  windowState = new WindowStateManager({
     width: 1200,
     height: 800
   })
+
+  getUUID().then((_) => (uuid = _))
 
   protocol.handle("js-browser", async (request) => {
     const pathname = request.url.slice("js-browser://".length)
@@ -189,11 +179,12 @@ app.whenReady().then(() => {
 
   //IPC events
   ipcMain.on("index:close-splash", () => {
-    splashWindow!.webContents.send("splash:begin-close")
+    splashWindow?.webContents.send("splash:begin-close")
   })
   ipcMain.on("splash:close-ready", () => {
     splashWindow!.hide()
     splashWindow!.close()
+    splashWindow = null
   })
   ipcMain.on("tab-create", (_, { id, url, presetCookies }) => createTab(id, url, presetCookies))
   ipcMain.on("tab-switch", (_, id) => switchTab(id))
@@ -214,8 +205,6 @@ app.whenReady().then(() => {
     mainWindow!.close()
   })
 
-  ipcMain.handle("get-default-url", () => defaultUrl)
-
   //activeTab actions
   ipcMain.on("active-tab-go-back", () => activeTabGoBack())
   ipcMain.on("active-tab-go-forward", () => activeTabGoForward())
@@ -227,17 +216,69 @@ app.whenReady().then(() => {
   })
 
   //notification window events
-  ipcMain.on("notification:hide", () => notificationDialogWindow.hide())
-  ipcMain.on("notification:show", () => notificationDialogWindow.show())
+  ipcMain.on("notification:close", () => {
+    notificationDialogWindow?.close()
+    notificationDialogWindow = null
+  })
+  ipcMain.on("notification:show", (_, data) => {
+    if (notificationDialogWindow) return
 
-  createWindow(windowState)
+    notificationDialogWindow = new BrowserWindow({
+      // parent: mainWindow,
+      frame: false,
+      show: false,
+      resizable: false,
+      movable: true,
+      transparent: true,
+      hasShadow: false,
+      webPreferences: {
+        preload: join(__dirname, "../preload/notificationDialog.js"),
+        sandbox: false
+      }
+    })
+
+    notificationDialogWindow?.webContents.once("will-navigate", (_, url) => {
+      mainWindow!.webContents!.send("new-tab-requested", url)
+      notificationDialogWindow?.close()
+      notificationDialogWindow = null
+    })
+
+    notificationDialogWindow?.webContents.once("did-finish-load", () => {
+      notificationDialogWindow!.webContents.send("init-data", data)
+    })
+
+    notificationDialogWindow!.on("close", () => (notificationDialogWindow = null))
+
+    if (is.dev && process.env["ELECTRON_RENDERER_URL"]) {
+      notificationDialogWindow.loadURL(
+        process.env["ELECTRON_RENDERER_URL"] + "/notification-dialog.html"
+      )
+      // notificationDialogWindow.webContents.openDevTools({ mode: "detach" })
+    } else {
+      notificationDialogWindow.loadFile(join(__dirname, "../renderer/notification-dialog.html"))
+    }
+  })
+
+  ipcMain.on("notification:ready-to-show", (_, size) => {
+    const mainWindowState = windowState!.getState()
+
+    notificationDialogWindow?.setBounds({
+      width: size.width,
+      height: size.height,
+      x: (mainWindowState.x ?? 0) + (mainWindowState.width - size.width) / 2,
+      y: (mainWindowState.y ?? 0) + (mainWindowState.height - size.height) / 2
+    })
+    notificationDialogWindow?.show()
+  })
+
+  createWindow()
 
   registerBrowserShortcuts()
 
   app.on("activate", function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow(windowState)
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
@@ -249,3 +290,19 @@ app.on("window-all-closed", () => {
     app.quit()
   }
 })
+
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on("second-instance", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore()
+      mainWindow.focus()
+    }
+  })
+}
+
+app.on("before-quit", reportSessionDuration)
+
+process.on("exit", reportSessionDuration)

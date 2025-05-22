@@ -2,6 +2,9 @@ import { resolve } from "path"
 import { defineConfig, externalizeDepsPlugin } from "electron-vite"
 import vue from "@vitejs/plugin-vue"
 import svgLoader from "vite-svg-loader"
+import dotenv from "dotenv"
+
+dotenv.config()
 
 export default defineConfig({
   main: {
@@ -18,7 +21,16 @@ export default defineConfig({
         }
       }
     },
-    plugins: [externalizeDepsPlugin()]
+    plugins: [externalizeDepsPlugin()],
+    define: {
+      "process.env.API_DOMAIN": JSON.stringify(process.env.API_DOMAIN),
+      "process.env.API_GET_CONFIG_PATH": JSON.stringify(process.env.API_GET_CONFIG_PATH),
+      "process.env.REVERB_APP_KEY": JSON.stringify(process.env.REVERB_APP_KEY),
+      "process.env.REVERB_HOST": JSON.stringify(process.env.REVERB_HOST),
+      "process.env.REVERB_WS_PORT": JSON.stringify(process.env.REVERB_WS_PORT),
+      "process.env.REVERB_WSS_PORT": JSON.stringify(process.env.REVERB_WSS_PORT),
+      "process.env.APP_CHANNEL": JSON.stringify(process.env.APP_CHANNEL ?? "MircoSite")
+    }
   },
   renderer: {
     build: {

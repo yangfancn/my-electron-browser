@@ -215,6 +215,7 @@ const viewContent = (id: number): void => {
           box-sizing: border-box;
           box-shadow: 0 0 5px 1px #ccc;
           padding: 2.5rem;
+          word-break: break-all;
         }
       }
     }

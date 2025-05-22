@@ -30,11 +30,24 @@ interface Api {
   activeTabStop: () => void
   toggleLeftDrawer: () => Promise<boolean>
   toggleDownloadWindow: () => void
+  showNotificationDialog: (data: { title: string; content: string; timeout: number }) => void
+  closeNotificationDialog: () => void
+}
+
+interface Env {
+  API_DOMAIN: string
+  API_GET_CONFIG_PATH: string
+  REVERB_APP_KEY: string
+  REVERB_HOST: string
+  REVERB_WS_PORT: number
+  REVERB_WSS_PORT: number
+  CHANNEL: string
 }
 
 declare global {
   interface Window {
     electron: ElectronAPI
     api: Api
+    env: Env
   }
 }

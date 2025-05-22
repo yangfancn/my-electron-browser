@@ -52,13 +52,27 @@ const api = {
   activeTabReload: () => ipcRenderer.send("active-tab-reload"),
   activeTabStop: () => ipcRenderer.send("active-tab-stop"),
   toggleLeftDrawer: () => ipcRenderer.invoke("toggle-left-drawer"),
-  toggleDownloadWindow: () => ipcRenderer.send("toggle-download")
+  toggleDownloadWindow: () => ipcRenderer.send("toggle-download"),
+  showNotificationDialog: (data: { title: string; content: string; timeout: number }) =>
+    ipcRenderer.send("notification:show", data),
+  closeNotificationDialog: () => ipcRenderer.send("notification:close")
+}
+
+const env = {
+  API_DOMAIN: process.env.API_DOMAIN,
+  API_GET_CONFIG_PATH: process.env.API_GET_CONFIG_PATH,
+  REVERB_APP_KEY: process.env.REVERB_APP_KEY,
+  REVERB_HOST: process.env.REVERB_HOST,
+  REVERB_WS_PORT: process.env.REVERB_WS_PORT,
+  REVERB_WSS_PORT: process.env.REVERB_WSS_PORT,
+  CHANNEL: process.env.APP_CHANNEL ?? "MircoSite"
 }
 
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld("electron", electronAPI)
     contextBridge.exposeInMainWorld("api", api)
+    contextBridge.exposeInMainWorld("env", env)
   } catch (error) {
     console.error(error)
   }
@@ -67,4 +81,6 @@ if (process.contextIsolated) {
   window.electron = electronAPI
   // @ts-ignore (define in dts)
   window.api = api
+  // @ts-ignore (define in dts)
+  window.env = env
 }

@@ -8,6 +8,7 @@ interface Tab {
   url: string
   title?: string
   favicon?: string
+  faviconLoadFailed?: boolean
   canGoBack?: boolean
   canGoForward?: boolean
   loading?: boolean

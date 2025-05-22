@@ -13,7 +13,13 @@
         :class="{ active: item.id === tabStore.activeTabId }"
         @click="switchTab(item.id)"
       >
-        <img v-if="item.favicon" :src="item.favicon" alt="favicon" class="favicon" />
+        <img
+          v-if="item.favicon && !item.faviconLoadFailed"
+          :src="item.favicon"
+          alt="favicon"
+          class="favicon"
+          @error="item.faviconLoadFailed = true"
+        />
         <Earth v-else class="favicon default-favicon" />
         <span>{{ item.title || "加载中..." }}</span>
         <Close class="close" @click.stop="closeTab(item.id)" />

@@ -17,13 +17,22 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
+    "build:win:media": "npm run build && cross-env APP_CHANNEL=Media npm run build && cross-env APP_CHANNEL=Media electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
     "build:linux": "npm run build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.example.app",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "axios": "^1.9.0",
+    "dotenv": "^16.5.0",
     "electron-updater": "^6.3.9",
     "laravel-echo": "^2.1.4",
     "pinia": "^3.0.2",
@@ -38,6 +47,7 @@
     "@electron-toolkit/tsconfig": "^1.0.1",
     "@types/node": "^22.14.1",
     "@vitejs/plugin-vue": "^5.2.3",
+    "cross-env": "^7.0.3",
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
     "electron-vite": "^3.1.0",
